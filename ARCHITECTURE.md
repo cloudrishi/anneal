@@ -320,16 +320,19 @@ anneal/
 │       │   ├── LanguageRules.java
 │       │   ├── ConcurrencyRules.java
 │       │   └── BuildRules.java
-│       ├── engine/                     Rule engine — applies rules to AST
+│       ├── engine/                     Rule engine + risk scoring
+│       │   ├── RuleEngine.java         Applies rules to CompilationUnit — stateless
+│       │   └── RiskScoreCalculator.java  Weighted score, per-boundary breakdown
 │       ├── scanner/                    JavaParser integration, file walker
-│       └── phase/                      Phase orchestration
+│       │   ├── CodebaseScanner.java    Walks repo, coordinates scan
+│       │   └── BuildFileScanner.java   pom.xml / build.gradle text scanning
+│       └── phase/                      Phase orchestration — coming next
 ├── anneal-llm/                         LangChain4j — fix generation, embeddings
 ├── anneal-store/                       Persistence — Panache, Flyway, pgvector
 ├── anneal-ui/                          Next.js frontend
 ├── docs/
 │   └── architecture.png
 ├── helm/anneal/
-├── .sdkmanrc                           java=25.0.2-tem
 ├── docker-compose.yml
 ├── init.sql
 ├── .env.example
@@ -452,3 +455,37 @@ A project with 5 JPMS violations hits CRITICAL immediately — the ceiling is in
 ### implementation
 
 `RiskScoreCalculator` in `anneal-core/engine/` — stateless, deterministic, no LLM involvement.
+
+---
+
+## scanner layer
+
+### classes
+
+| Class | Package | Responsibility |
+|---|---|---|
+| `RuleEngine` | `anneal-core/engine` | Applies rules to a parsed `CompilationUnit` — stateless, deterministic |
+| `CodebaseScanner` | `anneal-core/scanner` | Walks repo, parses `.java` files, coordinates rule engine and build scanner |
+| `BuildFileScanner` | `anneal-core/scanner` | Text-based scanning of `pom.xml`, `build.gradle`, `build.gradle.kts` |
+
+### pattern dispatch
+
+`RuleEngine` dispatches on `PatternType`:
+
+| PatternType | Handler | Notes |
+|---|---|---|
+| IMPORT | `matchImport()` | Wildcard and exact match support |
+| API_CALL | `matchApiCall()` | Extracts method name from `java.lang.Thread#stop()` format |
+| AST_NODE | `matchAstNode()` | MethodDeclaration and ObjectCreationExpr supported |
+| REFLECTION | `matchReflection()` | Matches method call by name |
+| BUILD | `BuildFileScanner` | Separate scanner — not handled by RuleEngine |
+| ANNOTATION | — | Future scanner — returns empty list currently |
+
+### design decisions
+
+- `target/` and `build/` directories excluded from scan — compiled classes not scanned
+- JavaParser configured with `ReflectionTypeSolver` + `JavaParserTypeSolver` for type resolution
+- Language level set to `JAVA_21` — highest stable level JavaParser supports
+- `BuildFileScanner` uses text-based line scanning — simpler and faster than XML parsing for our patterns
+- Parse errors are logged as warnings and skipped — scan continues on malformed files
+- `CodebaseScanner` is stateless — safe to reuse across multiple scans
