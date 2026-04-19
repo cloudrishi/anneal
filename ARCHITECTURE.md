@@ -393,3 +393,62 @@ anneal/
 - Does `anneal-core` need `quarkus-arc` for CDI annotations, or stay zero-dependency pure Java?
 - How do we handle `build.gradle` projects — JavaParser covers `.java` files, but Gradle build scanning needs a separate parser
 - Integration test strategy — real pgvector instance or mocked embedding store?
+
+---
+
+## risk score
+
+### formula
+
+Each finding contributes a weighted score based on severity, confidence, and effort:
+
+```
+findingScore = severityWeight × confidence × effortMultiplier
+```
+
+**Severity weights:**
+```
+BREAKING       = 10
+DEPRECATED     =  5
+MODERNIZATION  =  1
+```
+
+**Effort multipliers:**
+```
+MANUAL   = 1.5   — hardest to fix, highest risk
+HIGH     = 1.3
+MEDIUM   = 1.1
+LOW      = 1.0
+TRIVIAL  = 0.8   — easy fix, lower urgency
+```
+
+**Aggregate:**
+```
+rawScore  = sum of all findingScores
+riskScore = min(100, rawScore)    — capped at 100
+```
+
+### risk bands
+
+| Score | Band | Meaning |
+|---|---|---|
+| 0–20 | LOW | Mostly modernization opportunities, no blockers |
+| 21–50 | MEDIUM | Some deprecated APIs, addressable incrementally |
+| 51–80 | HIGH | Multiple breaking changes — plan carefully |
+| 81–100 | CRITICAL | JPMS violations or mass API removals — must fix before migrating |
+
+### examples
+
+| Finding | Severity | Confidence | Effort | Score |
+|---|---|---|---|---|
+| `JPMS_SUN_IMPORT` | BREAKING | 1.0 | HIGH | 13.0 |
+| `JPMS_ILLEGAL_REFLECTIVE_ACCESS` | BREAKING | 0.7 | HIGH | 9.1 |
+| `API_JAXB_REMOVED` | BREAKING | 1.0 | LOW | 10.0 |
+| `DEPRECATION_FINALIZE` | DEPRECATED | 0.9 | MEDIUM | 4.95 |
+| `LANGUAGE_RECORD_OPPORTUNITY` | MODERNIZATION | 0.5 | LOW | 0.5 |
+
+A project with 5 JPMS violations hits CRITICAL immediately — the ceiling is intentional. At that point the exact number doesn't matter, the message is clear.
+
+### implementation
+
+`RiskScoreCalculator` in `anneal-core/engine/` — stateless, deterministic, no LLM involvement.
