@@ -110,7 +110,7 @@ Java 8 → Java 11 (LTS) → Java 17 (LTS) → Java 21 (LTS) → Java 25 (LTS) �
 | `Thread` / thread pool | Virtual thread (Loom) | `CONCURRENCY_THREAD_VIRTUAL` | MEDIUM |
 | `ThreadLocal` | `ScopedValue` | `CONCURRENCY_THREADLOCAL_SCOPED_VALUE` | MEDIUM |
 | `synchronized` block | Structured concurrency | `CONCURRENCY_SYNCHRONIZED_STRUCTURED` | HIGH |
-| `javax.*` Maven coords | `jakarta.*` | `BUILD_JAVAX_TO_JAKARTA_COORDS` | LOW |
+| `javax.*` dependency coordinates | `jakarta.*` | `BUILD_JAVAX_TO_JAKARTA_COORDS` | LOW |
 
 ---
 
@@ -248,11 +248,11 @@ FindingStatus:  OPEN · ACCEPTED · REJECTED · DEFERRED
 | LLM — deep (opt-in) | claude-sonnet-4-6 | Anthropic API | Complex refactors requiring deep reasoning |
 | Frontend | Next.js | 16 | TypeScript, React, Tailwind |
 | Deployment | Kubernetes + Helm | — | Cloud-native from day one |
-| CI | GitHub Actions | — | SARIF output, Maven test runner |
+| CI | GitHub Actions | — | SARIF output, Gradle test runner |
 | Build JDK | Temurin | 25.0.2-tem | Matches migration target; installed via SDKMAN |
 | Lombok | Lombok | 1.18.42 | Java 25 support added in 1.18.40; 1.18.36 does not compile on Java 25 |
 
-### Maven coordinate corrections (learned during implementation)
+### Dependency coordinate corrections (learned during implementation)
 
 | Wrong | Correct | Reason |
 |---|---|---|
@@ -265,17 +265,18 @@ FindingStatus:  OPEN · ACCEPTED · REJECTED · DEFERRED
 
 The tool itself is built and runs on **Java 25**. A Java modernization tool must run on the version it targets.
 
-```xml
-<properties>
-  <maven.compiler.release>25</maven.compiler.release>
-</properties>
+```kotlin
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
 ```
 
 SDKMAN install:
 ```bash
 sdk install java 25.0.2-tem
 sdk use java 25.0.2-tem
-echo "java=25.0.2-tem" > .sdkmanrc
 ```
 
 ### Hardware target (development)
@@ -291,7 +292,12 @@ echo "java=25.0.2-tem" > .sdkmanrc
 ```
 anneal/
 ├── .github/workflows/ci.yml
+├── gradle/
+│   ├── libs.versions.toml              Version catalog — all dependency versions
+│   └── wrapper/
+│       └── gradle-wrapper.properties   Pins Gradle 9.4.1
 ├── anneal-api/                         REST layer — Quarkus resources, DTOs
+│   ├── build.gradle.kts
 │   └── src/main/java/com/rish/anneal/api/
 │       ├── resource/
 │       ├── dto/
@@ -299,6 +305,7 @@ anneal/
 │       └── registry/
 │           └── RuleRegistry.java       CDI bean — aggregates all rule sets
 ├── anneal-core/                        Domain — pure Java, zero framework deps
+│   ├── build.gradle.kts
 │   └── src/main/java/com/rish/anneal/core/
 │       ├── model/                      Enums + domain classes
 │       │   ├── JavaVersion.java
@@ -325,14 +332,20 @@ anneal/
 │       │   └── RiskScoreCalculator.java  Weighted score, per-boundary breakdown
 │       ├── scanner/                    JavaParser integration, file walker
 │       │   ├── CodebaseScanner.java    Walks repo, coordinates scan
-│       │   └── BuildFileScanner.java   pom.xml / build.gradle text scanning
+│       │   ├── BuildFileScanner.java   pom.xml / build.gradle text scanning
+│       │   └── VersionDetector.java    Detects Java version from build files
 │       └── phase/                      Phase orchestration — coming next
 ├── anneal-llm/                         LangChain4j — fix generation, embeddings
+│   └── build.gradle.kts
 ├── anneal-store/                       Persistence — Panache, Flyway, pgvector
+│   └── build.gradle.kts
 ├── anneal-ui/                          Next.js frontend
 ├── docs/
 │   └── architecture.png
 ├── helm/anneal/
+├── build.gradle.kts                    Root — common config, Quarkus BOM
+├── settings.gradle.kts                 Module declarations
+├── gradlew / gradlew.bat               Gradle wrapper scripts
 ├── docker-compose.yml
 ├── init.sql
 ├── .env.example
@@ -379,7 +392,7 @@ anneal/
 | 2026-04-19 | LTS-to-LTS incremental path | Nobody migrates 8→25 in one commit |
 | 2026-04-19 | Target Java 25, not Java 21 | Java 21 free updates expire September 2026; Java 25 supported until 2033 |
 | 2026-04-19 | module-info.java — MANUAL only | Incorrect generation breaks the build |
-| 2026-04-19 | Multi-module Maven — per-module scan | Each module has its own dependency tree |
+| 2026-04-19 | Multi-module Gradle — per-module scan | Each module has its own dependency tree |
 | 2026-04-19 | CI format — SARIF | Industry standard; works across GitHub, GitLab, Azure DevOps |
 | 2026-04-19 | Rule engine — code-driven | Rules are logic not data; testable, version-controlled |
 | 2026-04-19 | Detection is LLM-free | Deterministic; faster and more reliable |
@@ -489,3 +502,70 @@ A project with 5 JPMS violations hits CRITICAL immediately — the ceiling is in
 - `BuildFileScanner` uses text-based line scanning — simpler and faster than XML parsing for our patterns
 - Parse errors are logged as warnings and skipped — scan continues on malformed files
 - `CodebaseScanner` is stateless — safe to reuse across multiple scans
+
+---
+
+## build system
+
+### Gradle 9.4.1 — Kotlin DSL
+
+Migrated from Maven to Gradle mid-project. Decision: a Java modernization tool that recommends Gradle to its users should be built with Gradle. Dogfooding.
+
+### structure
+
+| File | Purpose |
+|---|---|
+| `gradle/libs.versions.toml` | Version catalog — single source of truth for all dependency versions |
+| `settings.gradle.kts` | Root settings — declares all submodules |
+| `build.gradle.kts` | Root build — common config, Quarkus BOM, shared dependencies |
+| `anneal-core/build.gradle.kts` | Core deps only — JavaParser |
+| `anneal-store/build.gradle.kts` | Persistence deps — Panache, Flyway, pgvector |
+| `anneal-llm/build.gradle.kts` | LLM deps — LangChain4j, Ollama, Anthropic, embeddings |
+| `anneal-api/build.gradle.kts` | REST layer — Quarkus plugin, health, OpenAPI |
+
+### version catalog — `gradle/libs.versions.toml`
+
+Replaces Maven's `dependencyManagement`. All versions in one file, referenced by alias across all modules. The coordinate correction problems we hit with Maven (wrong artifact IDs, versions that don't exist) are prevented here — one place to fix, all modules pick it up.
+
+```toml
+[versions]
+quarkus = "3.33.1"
+langchain4j = "1.13.0"
+langchain4j-embeddings = "0.36.2"   # pinned — not released at 1.13.0
+langchain4j-pgvector = "0.26.2"     # Quarkiverse — different version stream
+javaparser = "3.28.0"
+lombok = "1.18.42"                  # 1.18.40+ required for Java 25
+```
+
+### Java toolchain
+
+```kotlin
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+```
+
+Gradle toolchain API ensures the correct JDK is used regardless of what's on `PATH`. More reliable than Maven's `maven.compiler.release`.
+
+### Gradle wrapper
+
+Always use `./gradlew` — never the global `gradle` command. Ensures every developer and CI uses exactly Gradle 9.4.1.
+
+```bash
+./gradlew compileJava   # compile all modules
+./gradlew test          # run all tests
+./gradlew :anneal-api:quarkusDev  # Quarkus dev mode
+```
+
+### decisions
+
+| Date | Decision | Rationale |
+|---|---|---|
+| 2026-04-19 | Migrate Maven → Gradle | Dogfooding — anneal recommends Gradle; must use it |
+| 2026-04-19 | Kotlin DSL over Groovy DSL | Type-safe, IDE-friendly, modern standard for new projects |
+| 2026-04-19 | Version catalog | Single source of truth; prevents coordinate errors |
+| 2026-04-19 | Gradle toolchain API | More reliable JDK selection than relying on PATH |
+| 2026-04-19 | Gradle 9.4.1 | Latest stable; Java 25 + Java 26 support |
+| 2026-04-19 | Auto-discovery of libs.versions.toml | Gradle 9 picks it up automatically — no manual `from()` call needed |

@@ -1,0 +1,42 @@
+[versions]
+java = "25"
+quarkus = "3.33.1"
+langchain4j = "1.13.0"
+langchain4j-embeddings = "0.36.2"
+langchain4j-pgvector = "0.26.2"
+javaparser = "3.28.0"
+lombok = "1.18.42"
+assertj = "3.26.3"
+
+[libraries]
+# Quarkus — managed by BOM, no version needed here
+quarkus-rest-jackson         = { module = "io.quarkus:quarkus-rest-jackson" }
+quarkus-rest-client-jackson  = { module = "io.quarkus:quarkus-rest-client-jackson" }
+quarkus-hibernate-orm-panache = { module = "io.quarkus:quarkus-hibernate-orm-panache" }
+quarkus-jdbc-postgresql      = { module = "io.quarkus:quarkus-jdbc-postgresql" }
+quarkus-flyway               = { module = "io.quarkus:quarkus-flyway" }
+quarkus-smallrye-health      = { module = "io.quarkus:quarkus-smallrye-health" }
+quarkus-smallrye-openapi     = { module = "io.quarkus:quarkus-smallrye-openapi" }
+quarkus-container-image-docker = { module = "io.quarkus:quarkus-container-image-docker" }
+quarkus-arc                  = { module = "io.quarkus:quarkus-arc" }
+quarkus-junit                = { module = "io.quarkus:quarkus-junit", version.ref = "quarkus" }
+quarkus-test-h2              = { module = "io.quarkus:quarkus-test-h2" }
+rest-assured                 = { module = "io.rest-assured:rest-assured" }
+
+# LangChain4j
+langchain4j                  = { module = "dev.langchain4j:langchain4j", version.ref = "langchain4j" }
+langchain4j-ollama           = { module = "dev.langchain4j:langchain4j-ollama", version.ref = "langchain4j" }
+langchain4j-anthropic        = { module = "dev.langchain4j:langchain4j-anthropic", version.ref = "langchain4j" }
+langchain4j-embeddings-minilm = { module = "dev.langchain4j:langchain4j-embeddings-all-minilm-l6-v2", version.ref = "langchain4j-embeddings" }
+langchain4j-pgvector         = { module = "io.quarkiverse.langchain4j:quarkus-langchain4j-pgvector", version.ref = "langchain4j-pgvector" }
+
+# JavaParser
+javaparser-symbol-solver     = { module = "com.github.javaparser:javaparser-symbol-solver-core", version.ref = "javaparser" }
+
+# Utilities
+lombok                       = { module = "org.projectlombok:lombok", version.ref = "lombok" }
+assertj                      = { module = "org.assertj:assertj-core", version.ref = "assertj" }
+mockito                      = { module = "org.mockito:mockito-core" }
+
+[plugins]
+quarkus   = { id = "io.quarkus", version.ref = "quarkus" }
