@@ -23,6 +23,8 @@ subprojects {
     // Import Quarkus BOM — manages versions for all Quarkus artifacts
     dependencies {
         implementation(enforcedPlatform("io.quarkus.platform:quarkus-bom:3.33.1"))
+        implementation(enforcedPlatform("io.quarkus.platform:quarkus-langchain4j-bom:3.33.1"))
+    
     }
 
     // Common dependencies across all modules

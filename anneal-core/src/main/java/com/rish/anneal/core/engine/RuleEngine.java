@@ -1,15 +1,14 @@
 package com.rish.anneal.core.engine;
 
-import com.rish.anneal.core.model.DetectionPattern;
-import com.rish.anneal.core.model.Finding;
-import com.rish.anneal.core.model.JavaVersion;
-import com.rish.anneal.core.model.MigrationRule;
-import com.rish.anneal.core.model.PatternType;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.ImportDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
+import com.rish.anneal.core.model.DetectionPattern;
+import com.rish.anneal.core.model.Finding;
+import com.rish.anneal.core.model.JavaVersion;
+import com.rish.anneal.core.model.MigrationRule;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,7 +17,7 @@ import java.util.UUID;
 /**
  * Applies a set of migration rules to a parsed Java CompilationUnit.
  * Returns a list of findings — one per matched pattern per rule.
- *
+ * <p>
  * Stateless — safe to use concurrently across multiple files.
  * Detection is fully deterministic — no LLM involvement.
  */
@@ -27,11 +26,11 @@ public class RuleEngine {
     /**
      * Applies all provided rules to the given CompilationUnit.
      *
-     * @param cu           parsed Java file
-     * @param filePath     absolute path to the file — included in each finding
-     * @param rules        rules to apply — typically scoped to a version boundary
-     * @param source       detected source Java version
-     * @param target       migration target version
+     * @param cu       parsed Java file
+     * @param filePath absolute path to the file — included in each finding
+     * @param rules    rules to apply — typically scoped to a version boundary
+     * @param source   detected source Java version
+     * @param target   migration target version
      * @return list of findings, may be empty
      */
     public List<Finding> apply(CompilationUnit cu,
@@ -46,7 +45,12 @@ public class RuleEngine {
                 continue;
             }
             for (DetectionPattern pattern : rule.getPatterns()) {
-                findings.addAll(matchPattern(cu, filePath, rule, pattern));
+
+                List<Finding> matched = matchPattern(cu, filePath, rule, pattern);
+                if (!matched.isEmpty()) {
+                    System.out.println("MATCH: " + rule.getRuleId() + " in " + filePath);
+                }
+                findings.addAll(matched);
             }
         }
 

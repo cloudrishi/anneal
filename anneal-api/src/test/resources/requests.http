@@ -1,0 +1,20 @@
+### Health check
+GET http://localhost:8080/api/health
+Accept: application/json
+
+### Scan a repository
+POST http://localhost:8080/api/scan
+Content-Type: application/json
+
+{
+  "repoPath": "/Users/rish/working/p2-projects/master-data-service",
+  "sourceVersion": "17"
+}
+
+### Scan with auto-detection
+POST http://localhost:8080/api/scan
+Content-Type: application/json
+
+{
+  "repoPath": "/Users/rish/working/p2-projects/master-data-service"
+}

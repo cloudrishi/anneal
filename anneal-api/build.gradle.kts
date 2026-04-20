@@ -15,6 +15,6 @@ dependencies {
     implementation(libs.quarkus.smallrye.openapi)
     implementation(libs.quarkus.container.image.docker)
     implementation(libs.quarkus.hibernate.validator)
-
+    implementation("io.quarkus:quarkus-config-yaml")
     testImplementation(libs.rest.assured)
 }

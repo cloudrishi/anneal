@@ -10,6 +10,12 @@ quarkus:
     jdbc:
       url: ${DB_URL:jdbc:postgresql://localhost:5432/anneal}
 
+  langchain4j:
+    pgvector:
+      dimension: 384
+      table: code_embeddings
+      drop-table-first: false
+
   # Hibernate
   hibernate-orm:
     database:
@@ -53,7 +59,7 @@ quarkus:
     level: INFO
     category:
       "com.rish.anneal":
-        level: DEBUG
+        level: WARN
 
 # Anneal configuration
 anneal:
@@ -80,13 +86,17 @@ anneal:
 "%dev":
   quarkus:
     log:
-      level: DEBUG
+      level: WARN
     hibernate-orm:
       log:
         sql: true
     datasource:
+      devservices:
+        enabled: false
       jdbc:
         url: jdbc:postgresql://localhost:5432/anneal
+      username: admin
+      password: admin
 
 # Test overrides
 "%test":

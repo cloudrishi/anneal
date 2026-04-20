@@ -5,20 +5,16 @@ import com.rish.anneal.api.dto.ScanResponse;
 import com.rish.anneal.api.mapper.ScanMapper;
 import com.rish.anneal.api.registry.RuleRegistry;
 import com.rish.anneal.core.engine.RiskScoreCalculator;
+import com.rish.anneal.core.engine.RuleEngine;
 import com.rish.anneal.core.model.JavaVersion;
 import com.rish.anneal.core.model.MigrationRule;
 import com.rish.anneal.core.model.ScanResult;
 import com.rish.anneal.core.scanner.BuildFileScanner;
 import com.rish.anneal.core.scanner.CodebaseScanner;
 import com.rish.anneal.core.scanner.VersionDetector;
-import com.rish.anneal.core.engine.RuleEngine;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.Operation;
@@ -30,10 +26,10 @@ import java.util.Optional;
 
 /**
  * REST resource for codebase scanning and migration analysis.
- *
+ * <p>
  * Endpoints:
- *   GET  /api/health  — liveness check
- *   POST /api/scan    — scan a Java repository and return findings
+ * GET  /api/health  — liveness check
+ * POST /api/scan    — scan a Java repository and return findings
  */
 @Path("/api")
 @Produces(MediaType.APPLICATION_JSON)
@@ -42,16 +38,12 @@ import java.util.Optional;
 public class ScanResource {
 
     private final RuleRegistry ruleRegistry;
-    private final RiskScoreCalculator riskScoreCalculator;
-    private final VersionDetector versionDetector;
+    private final RiskScoreCalculator riskScoreCalculator = new RiskScoreCalculator();
+    private final VersionDetector versionDetector = new VersionDetector();
 
     @Inject
-    public ScanResource(RuleRegistry ruleRegistry,
-                        RiskScoreCalculator riskScoreCalculator,
-                        VersionDetector versionDetector) {
+    public ScanResource(RuleRegistry ruleRegistry) {
         this.ruleRegistry = ruleRegistry;
-        this.riskScoreCalculator = riskScoreCalculator;
-        this.versionDetector = versionDetector;
     }
 
     @GET
@@ -83,7 +75,6 @@ public class ScanResource {
                     .build();
         }
 
-        // Detect or parse source version
         JavaVersion source = resolveSourceVersion(request, repoPath);
         if (source == null) {
             return Response.status(Response.Status.BAD_REQUEST)
@@ -93,11 +84,9 @@ public class ScanResource {
         }
 
         JavaVersion target = JavaVersion.V25;
-
-        // Get applicable rules for this boundary
         List<MigrationRule> rules = ruleRegistry.rulesFor(source, target);
-
-        // Run the scan
+        System.out.println("Rules for " + source + " → " + target + ": " + rules.size());
+        
         CodebaseScanner scanner = new CodebaseScanner(
                 new RuleEngine(),
                 riskScoreCalculator,
@@ -105,7 +94,6 @@ public class ScanResource {
         );
 
         ScanResult result = scanner.scan(repoPath, rules, source, target);
-
         ScanResponse response = ScanMapper.toResponse(result, riskScoreCalculator);
 
         return Response.ok(response).build();
@@ -113,7 +101,6 @@ public class ScanResource {
 
     private JavaVersion resolveSourceVersion(ScanRequest request,
                                              java.nio.file.Path repoPath) {
-        // If caller specified a version, use it
         if (request.sourceVersion() != null && !request.sourceVersion().isBlank()) {
             try {
                 return JavaVersion.fromInt(Integer.parseInt(request.sourceVersion().trim()));
@@ -121,8 +108,6 @@ public class ScanResource {
                 return null;
             }
         }
-
-        // Otherwise auto-detect from build file
         Optional<JavaVersion> detected = versionDetector.detect(repoPath);
         return detected.orElse(null);
     }
