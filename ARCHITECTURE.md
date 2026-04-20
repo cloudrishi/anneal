@@ -300,8 +300,13 @@ anneal/
 │   ├── build.gradle.kts
 │   └── src/main/java/com/rish/anneal/api/
 │       ├── resource/
+│       │   └── ScanResource.java       GET /api/health, POST /api/scan
 │       ├── dto/
+│       │   ├── ScanRequest.java        Request record
+│       │   ├── ScanResponse.java       Response record with boundary scores
+│       │   └── FindingDto.java         Individual finding DTO
 │       ├── mapper/
+│       │   └── ScanMapper.java         Domain → DTO, stateless
 │       └── registry/
 │           └── RuleRegistry.java       CDI bean — aggregates all rule sets
 ├── anneal-core/                        Domain — pure Java, zero framework deps
@@ -569,3 +574,48 @@ Always use `./gradlew` — never the global `gradle` command. Ensures every deve
 | 2026-04-19 | Gradle toolchain API | More reliable JDK selection than relying on PATH |
 | 2026-04-19 | Gradle 9.4.1 | Latest stable; Java 25 + Java 26 support |
 | 2026-04-19 | Auto-discovery of libs.versions.toml | Gradle 9 picks it up automatically — no manual `from()` call needed |
+| 2026-04-20 | DTOs as Java 25 records | No Lombok, no boilerplate — records are the right tool for immutable data transfer |
+| 2026-04-20 | ScanMapper as static methods | No state, no CDI — pure transformation; easier to test |
+| 2026-04-20 | quarkus-hibernate-validator for jakarta.validation | Required for @NotBlank on request DTOs |
+
+---
+
+## REST layer
+
+### endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/health` | Liveness check — returns `{"status":"ok","service":"anneal"}` |
+| POST | `/api/scan` | Scan a Java repository — returns full `ScanResponse` |
+
+### classes
+
+| Class | Package | Responsibility |
+|---|---|---|
+| `ScanResource` | `anneal-api/resource` | Quarkus REST resource — two endpoints |
+| `ScanRequest` | `anneal-api/dto` | Request record — `repoPath` + optional `sourceVersion` |
+| `ScanResponse` | `anneal-api/dto` | Response record — findings, risk score, boundary scores |
+| `FindingDto` | `anneal-api/dto` | Individual finding DTO |
+| `ScanMapper` | `anneal-api/mapper` | Domain → DTO transformation, stateless |
+
+### scan flow
+
+```
+POST /api/scan
+  → validate path exists and is directory
+  → resolve source version (caller-specified or VersionDetector auto-detect)
+  → RuleRegistry.rulesFor(source, V25)
+  → CodebaseScanner.scan()
+  → ScanMapper.toResponse()
+  → 200 OK with ScanResponse
+```
+
+### design decisions
+
+- All DTOs are Java 25 records — no Lombok, no boilerplate
+- `@NotBlank` on `ScanRequest.repoPath` — Quarkus returns 400 automatically
+- Findings sorted by severity then confidence descending — most critical first
+- `VersionDetector` CDI-injected; `CodebaseScanner`, `RuleEngine`, `BuildFileScanner` constructed inline — stateless, no CDI needed
+- `referenceUrl` is null in `FindingDto` for now — `MigrationRule` owns it, not `Finding`; denormalization deferred
+- `quarkus-hibernate-validator` required for `jakarta.validation` annotations
