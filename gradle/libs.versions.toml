@@ -22,6 +22,7 @@ quarkus-arc                  = { module = "io.quarkus:quarkus-arc" }
 quarkus-junit                = { module = "io.quarkus:quarkus-junit", version.ref = "quarkus" }
 quarkus-test-h2              = { module = "io.quarkus:quarkus-test-h2" }
 rest-assured                 = { module = "io.rest-assured:rest-assured" }
+quarkus-hibernate-validator = { module = "io.quarkus:quarkus-hibernate-validator" }
 
 # LangChain4j
 langchain4j                  = { module = "dev.langchain4j:langchain4j", version.ref = "langchain4j" }

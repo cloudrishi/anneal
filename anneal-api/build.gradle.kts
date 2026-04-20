@@ -14,6 +14,7 @@ dependencies {
     implementation(libs.quarkus.smallrye.health)
     implementation(libs.quarkus.smallrye.openapi)
     implementation(libs.quarkus.container.image.docker)
+    implementation(libs.quarkus.hibernate.validator)
 
     testImplementation(libs.rest.assured)
 }
