@@ -11,3 +11,8 @@ node_modules/
 .env
 .env.local
 .sdkmanrc
+
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
