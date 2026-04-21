@@ -298,6 +298,9 @@ anneal/
 │       └── gradle-wrapper.properties   Pins Gradle 9.4.1
 ├── anneal-api/                         REST layer — Quarkus resources, DTOs
 │   ├── build.gradle.kts
+│   ├── src/test/java/com/rish/anneal/api/
+│   │   └── resource/
+│   │       └── ScanResourceTest.java   Quarkus integration tests
 │   └── src/main/java/com/rish/anneal/api/
 │       ├── resource/
 │       │   └── ScanResource.java       GET /api/health, POST /api/scan
@@ -311,6 +314,12 @@ anneal/
 │           └── RuleRegistry.java       CDI bean — aggregates all rule sets
 ├── anneal-core/                        Domain — pure Java, zero framework deps
 │   ├── build.gradle.kts
+│   ├── src/test/java/com/rish/anneal/core/
+│   │   ├── engine/
+│   │   │   ├── RiskScoreCalculatorTest.java
+│   │   │   └── RuleEngineTest.java
+│   │   └── scanner/
+│   │       └── VersionDetectorTest.java
 │   └── src/main/java/com/rish/anneal/core/
 │       ├── model/                      Enums + domain classes
 │       │   ├── JavaVersion.java
@@ -350,7 +359,17 @@ anneal/
 │       │   └── FindingEntity.java      Panache entity — findings table
 │       └── repository/
 │           └── ScanResultRepository.java  Save + find scan results
-├── anneal-ui/                          Next.js frontend
+├── anneal-ui/                          Next.js 15 frontend — brutalist, molten orange
+│   ├── app/
+│   │   ├── globals.css                 Design tokens, IBM Plex Mono, #FF6B35 accent
+│   │   ├── layout.tsx                  Root layout
+│   │   ├── page.tsx                    Main page — scan input + results
+│   │   └── components/
+│   │       ├── Header.tsx              Sticky header
+│   │       ├── ScanPanel.tsx           Repo path input, version selector, scan trigger
+│   │       ├── RiskScore.tsx           Score + per-boundary breakdown
+│   │       └── FindingCard.tsx         Expandable finding with fix suggestion
+│   └── .env.local                      NEXT_PUBLIC_API_URL=http://localhost:8080
 ├── docs/
 │   └── architecture.png
 ├── helm/anneal/
@@ -650,3 +669,88 @@ GET /api/scans/{scanId}
 - `ScanSummaryDto` used for list view — avoids loading all findings for every scan in a list
 - `beans.xml` required in `anneal-store/src/main/resources/META-INF/` for CDI bean discovery
 - Sequences (`scan_results_seq`, `findings_seq`, `code_embeddings_seq`) must be in `public` schema — Hibernate resolves without schema prefix
+
+---
+
+## testing
+
+### test classes
+
+| Class | Module | Type | Tests |
+|---|---|---|---|
+| `RiskScoreCalculatorTest` | `anneal-core` | Unit | 14 — formula, bands, per-boundary, test-legacy score |
+| `RuleEngineTest` | `anneal-core` | Unit | 9 — import, wildcard, API call, reflection, AST node, version filtering |
+| `VersionDetectorTest` | `anneal-core` | Unit | 9 — Maven release/source/legacy, Gradle toolchain/sourceCompatibility, edge cases |
+| `ScanResourceTest` | `anneal-api` | Integration | 6 — health, 400s, valid scan, legacy findings, list, 404 |
+
+**Total: 38 tests, all passing**
+
+### test design decisions
+
+- `RiskScoreCalculatorTest` includes a test that mirrors the exact test-legacy file output (score 66) — regression anchor
+- `VersionDetectorTest` uses `@TempDir` — no real file system state, clean per test
+- `RuleEngineTest` uses `StaticJavaParser.parse()` directly — fast, no file I/O
+- `ScanResourceTest` uses Quarkus dev services (`pgvector/pgvector:pg16`) — real postgres, no H2 mocking
+- `FindingStatus` is a nested enum inside `Finding.java` — referenced as `Finding.FindingStatus.OPEN`
+
+### running tests
+
+```bash
+./gradlew test                    # all modules
+./gradlew :anneal-core:test       # core only
+./gradlew :anneal-api:test        # integration tests only
+```
+
+---
+
+## frontend
+
+### tech stack
+
+| Layer | Technology | Version |
+|---|---|---|
+| Framework | Next.js | 15 |
+| Language | TypeScript | 5 |
+| Styling | CSS variables + Tailwind | — |
+| Font | IBM Plex Mono | via @fontsource |
+| Package manager | npm | — |
+
+### design system
+
+| Token | Value | Usage |
+|---|---|---|
+| `--bg` | `#0a0a0a` | Page background |
+| `--surface` | `#111111` | Card / input background |
+| `--border` | `#1e1e1e` | Borders, dividers |
+| `--foreground` | `#e0e0e0` | Primary text |
+| `--accent` | `#FF6B35` | Molten orange — buttons, highlights, logo |
+| `--breaking` | `#e53e3e` | BREAKING severity |
+| `--warning` | `#f0b429` | DEPRECATED severity |
+| `--success` | `#4caf7d` | MODERNIZATION severity |
+
+**Aesthetic:** Brutalist dark — IBM Plex Mono throughout, raw borders, no rounded corners, high contrast. Consistent with `codebase-chat` and `master-data-ui` — deliberate portfolio signature.
+
+### components
+
+| Component | Responsibility |
+|---|---|
+| `Header` | Sticky header — logo, subtitle, target version |
+| `ScanPanel` | Repo path input, version selector, scan button, status message |
+| `RiskScore` | Score display, risk band, per-boundary breakdown with progress bars |
+| `FindingCard` | Expandable finding — severity badge, original code, suggested fix, accept/reject/defer |
+
+### pages
+
+| Page | Path | Description |
+|---|---|---|
+| Home | `/` | Scan input + results view |
+
+### decisions
+
+| Date | Decision | Rationale |
+|---|---|---|
+| 2026-04-21 | Brutalist theme with molten orange `#FF6B35` | Matches anneal metallurgy metaphor; consistent portfolio signature |
+| 2026-04-21 | IBM Plex Mono throughout | Developer tool aesthetic; monospace signals precision |
+| 2026-04-21 | CSS variables over Tailwind for design tokens | Direct control; easier to override per component |
+| 2026-04-21 | `@fontsource/ibm-plex-mono` | Self-hosted font — no Google Fonts dependency |
+| 2026-04-21 | Accept/reject/defer state is local only | Backend PATCH endpoint not yet wired — deferred to Phase 3 |
