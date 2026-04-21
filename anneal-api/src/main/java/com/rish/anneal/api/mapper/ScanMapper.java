@@ -94,4 +94,49 @@ public class ScanMapper {
                 null
         );
     }
+
+    /**
+     * Maps a ScanResultEntity to a ScanSummaryDto for the list view.
+     */
+    public static com.rish.anneal.api.dto.ScanSummaryDto toSummary(
+            com.rish.anneal.store.entity.ScanResultEntity entity,
+            long findingCount) {
+        return new com.rish.anneal.api.dto.ScanSummaryDto(
+                entity.scanId,
+                entity.repoPath,
+                entity.detectedVersion,
+                entity.targetVersion,
+                entity.riskScore,
+                entity.riskBand,
+                entity.phase,
+                entity.filesScanned,
+                entity.filesWithFindings,
+                findingCount,
+                entity.scannedAt.toString()
+        );
+    }
+
+    /**
+     * Maps a ScanResultEntity and its FindingEntities to a ScanResponse.
+     */
+    public static com.rish.anneal.api.dto.ScanResponse fromEntity(
+            com.rish.anneal.store.entity.ScanResultEntity entity,
+            java.util.List<com.rish.anneal.store.entity.FindingEntity> findings) {
+
+        var findingDtos = findings.stream()
+                .map(f -> new FindingDto(
+                        f.findingId, f.ruleId, f.ruleName, f.category,
+                        f.severity, f.effort, f.filePath, f.lineNumber,
+                        f.originalCode, f.description, f.confidence,
+                        f.affectsVersion, f.fixType, f.suggestedCode,
+                        f.autoApplicable, f.status, null))
+                .toList();
+
+        return new com.rish.anneal.api.dto.ScanResponse(
+                entity.scanId, entity.repoPath, entity.detectedVersion,
+                entity.targetVersion, entity.riskScore, entity.riskBand,
+                entity.phase, entity.filesScanned, entity.filesWithFindings,
+                findingDtos, List.of(), entity.scannedAt.toString()
+        );
+    }
 }

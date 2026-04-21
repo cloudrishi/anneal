@@ -343,7 +343,13 @@ anneal/
 ├── anneal-llm/                         LangChain4j — fix generation, embeddings
 │   └── build.gradle.kts
 ├── anneal-store/                       Persistence — Panache, Flyway, pgvector
-│   └── build.gradle.kts
+│   ├── build.gradle.kts
+│   └── src/main/java/com/rish/anneal/store/
+│       ├── entity/
+│       │   ├── ScanResultEntity.java   Panache entity — scan_results table
+│       │   └── FindingEntity.java      Panache entity — findings table
+│       └── repository/
+│           └── ScanResultRepository.java  Save + find scan results
 ├── anneal-ui/                          Next.js frontend
 ├── docs/
 │   └── architecture.png
@@ -577,6 +583,10 @@ Always use `./gradlew` — never the global `gradle` command. Ensures every deve
 | 2026-04-20 | DTOs as Java 25 records | No Lombok, no boilerplate — records are the right tool for immutable data transfer |
 | 2026-04-20 | ScanMapper as static methods | No state, no CDI — pure transformation; easier to test |
 | 2026-04-20 | quarkus-hibernate-validator for jakarta.validation | Required for @NotBlank on request DTOs |
+| 2026-04-20 | ScanSummaryDto for list view | Avoids N+1 loading of findings for every scan in a list |
+| 2026-04-20 | Sequences in public schema | Hibernate resolves sequence names without schema prefix |
+| 2026-04-20 | beans.xml in anneal-store | Required for Quarkus CDI bean discovery in non-API modules |
+| 2026-04-21 | GET /api/scans + GET /api/scans/{scanId} | Complete scan history — list and detail endpoints |
 
 ---
 
@@ -587,17 +597,23 @@ Always use `./gradlew` — never the global `gradle` command. Ensures every deve
 | Method | Path | Description |
 |---|---|---|
 | GET | `/api/health` | Liveness check — returns `{"status":"ok","service":"anneal"}` |
-| POST | `/api/scan` | Scan a Java repository — returns full `ScanResponse` |
+| POST | `/api/scan` | Scan a Java repository — returns full `ScanResponse` with findings |
+| GET | `/api/scans` | List all past scans — returns `List<ScanSummaryDto>`, most recent first |
+| GET | `/api/scans/{scanId}` | Get specific scan with all findings — returns `ScanResponse` |
 
 ### classes
 
 | Class | Package | Responsibility |
 |---|---|---|
-| `ScanResource` | `anneal-api/resource` | Quarkus REST resource — two endpoints |
+| `ScanResource` | `anneal-api/resource` | Quarkus REST resource — 4 endpoints |
 | `ScanRequest` | `anneal-api/dto` | Request record — `repoPath` + optional `sourceVersion` |
 | `ScanResponse` | `anneal-api/dto` | Response record — findings, risk score, boundary scores |
+| `ScanSummaryDto` | `anneal-api/dto` | Lightweight summary for list view — no findings |
 | `FindingDto` | `anneal-api/dto` | Individual finding DTO |
-| `ScanMapper` | `anneal-api/mapper` | Domain → DTO transformation, stateless |
+| `ScanMapper` | `anneal-api/mapper` | Domain → DTO + Entity → DTO transformation, stateless |
+| `ScanResultEntity` | `anneal-store/entity` | Panache entity — `anneal.scan_results` table |
+| `FindingEntity` | `anneal-store/entity` | Panache entity — `anneal.findings` table |
+| `ScanResultRepository` | `anneal-store/repository` | Persist and retrieve scan results and findings |
 
 ### scan flow
 
@@ -607,8 +623,20 @@ POST /api/scan
   → resolve source version (caller-specified or VersionDetector auto-detect)
   → RuleRegistry.rulesFor(source, V25)
   → CodebaseScanner.scan()
+  → ScanResultRepository.save()
   → ScanMapper.toResponse()
   → 200 OK with ScanResponse
+
+GET /api/scans
+  → ScanResultRepository.findAll()
+  → ScanMapper.toSummary() per entity
+  → 200 OK with List<ScanSummaryDto>
+
+GET /api/scans/{scanId}
+  → ScanResultRepository.findByScanId()
+  → ScanResultRepository.findingsByScanId()
+  → ScanMapper.fromEntity()
+  → 200 OK with ScanResponse | 404 if not found
 ```
 
 ### design decisions
@@ -616,6 +644,9 @@ POST /api/scan
 - All DTOs are Java 25 records — no Lombok, no boilerplate
 - `@NotBlank` on `ScanRequest.repoPath` — Quarkus returns 400 automatically
 - Findings sorted by severity then confidence descending — most critical first
-- `VersionDetector` CDI-injected; `CodebaseScanner`, `RuleEngine`, `BuildFileScanner` constructed inline — stateless, no CDI needed
+- `VersionDetector`, `RiskScoreCalculator`, `CodebaseScanner`, `RuleEngine`, `BuildFileScanner` — all stateless, instantiated directly; only `RuleRegistry` and `ScanResultRepository` are CDI beans
 - `referenceUrl` is null in `FindingDto` for now — `MigrationRule` owns it, not `Finding`; denormalization deferred
 - `quarkus-hibernate-validator` required for `jakarta.validation` annotations
+- `ScanSummaryDto` used for list view — avoids loading all findings for every scan in a list
+- `beans.xml` required in `anneal-store/src/main/resources/META-INF/` for CDI bean discovery
+- Sequences (`scan_results_seq`, `findings_seq`, `code_embeddings_seq`) must be in `public` schema — Hibernate resolves without schema prefix

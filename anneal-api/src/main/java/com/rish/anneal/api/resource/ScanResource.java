@@ -29,8 +29,10 @@ import java.util.Optional;
  * REST resource for codebase scanning and migration analysis.
  * <p>
  * Endpoints:
- * GET  /api/health  — liveness check
- * POST /api/scan    — scan a Java repository and return findings
+ * GET  /api/health           — liveness check
+ * POST /api/scan             — scan a Java repository
+ * GET  /api/scans            — list all past scans
+ * GET  /api/scans/{scanId}   — retrieve a specific scan with findings
  */
 @Path("/api")
 @Produces(MediaType.APPLICATION_JSON)
@@ -39,9 +41,9 @@ import java.util.Optional;
 public class ScanResource {
 
     private final RuleRegistry ruleRegistry;
+    private final ScanResultRepository repository;
     private final RiskScoreCalculator riskScoreCalculator = new RiskScoreCalculator();
     private final VersionDetector versionDetector = new VersionDetector();
-    private ScanResultRepository repository;
 
     @Inject
     public ScanResource(RuleRegistry ruleRegistry, ScanResultRepository repository) {
@@ -88,7 +90,6 @@ public class ScanResource {
 
         JavaVersion target = JavaVersion.V25;
         List<MigrationRule> rules = ruleRegistry.rulesFor(source, target);
-        
 
         CodebaseScanner scanner = new CodebaseScanner(
                 new RuleEngine(),
@@ -97,10 +98,34 @@ public class ScanResource {
         );
 
         ScanResult result = scanner.scan(repoPath, rules, source, target);
-        ScanResponse response = ScanMapper.toResponse(result, riskScoreCalculator);
         repository.save(result);
+        ScanResponse response = ScanMapper.toResponse(result, riskScoreCalculator);
 
         return Response.ok(response).build();
+    }
+
+    @GET
+    @Path("/scans")
+    @Operation(summary = "List all scans", description = "Returns all past scans, most recent first")
+    public Response listScans() {
+        var scans = repository.findAll().stream()
+                .map(entity -> ScanMapper.toSummary(entity, repository.countFindings(entity.scanId)))
+                .toList();
+        return Response.ok(scans).build();
+    }
+
+    @GET
+    @Path("/scans/{scanId}")
+    @Operation(summary = "Get scan by ID", description = "Returns a specific scan with all findings")
+    public Response getScan(@PathParam("scanId") String scanId) {
+        return repository.findByScanId(scanId)
+                .map(entity -> {
+                    var findings = repository.findingsByScanId(scanId);
+                    return Response.ok(ScanMapper.fromEntity(entity, findings)).build();
+                })
+                .orElse(Response.status(Response.Status.NOT_FOUND)
+                        .entity("{\"error\":\"Scan not found: " + scanId + "\"}")
+                        .build());
     }
 
     private JavaVersion resolveSourceVersion(ScanRequest request,

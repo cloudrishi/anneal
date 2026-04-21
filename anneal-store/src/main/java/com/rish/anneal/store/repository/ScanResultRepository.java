@@ -48,6 +48,20 @@ public class ScanResultRepository {
         return ScanResultEntity.list("ORDER BY scannedAt DESC");
     }
 
+    /**
+     * Returns the finding count for a given scanId.
+     */
+    public long countFindings(String scanId) {
+        return FindingEntity.count("scanResult.scanId", scanId);
+    }
+
+    /**
+     * Returns all findings for a given scanId.
+     */
+    public List<FindingEntity> findingsByScanId(String scanId) {
+        return FindingEntity.findByScanId(scanId);
+    }
+
     private ScanResultEntity toEntity(ScanResult result) {
         RiskScoreCalculator.RiskBand band = riskScoreCalculator.band(result.getRiskScore());
 
