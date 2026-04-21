@@ -1,0 +1,132 @@
+@import '@fontsource/ibm-plex-mono/400.css';
+@import '@fontsource/ibm-plex-mono/500.css';
+@import '@fontsource/ibm-plex-mono/700.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg:        #0a0a0a;
+  --surface:   #111111;
+  --border:    #1e1e1e;
+  --muted:     #444444;
+  --foreground: #e0e0e0;
+  --accent:    #FF6B35;
+  --accent-dim: #cc5528;
+  --success:   #4caf7d;
+  --warning:   #f0b429;
+  --danger:    #e53e3e;
+
+  /* severity colors */
+  --breaking:    #e53e3e;
+  --deprecated:  #f0b429;
+  --modernization: #4caf7d;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  background-color: var(--bg);
+  color: var(--foreground);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+/* Selection */
+::selection {
+  background: var(--accent);
+  color: #0a0a0a;
+}
+
+/* Links */
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+/* Inputs */
+input, textarea, select {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--foreground);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+input:focus, textarea:focus {
+  border-color: var(--accent);
+}
+
+/* Buttons */
+button {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Severity badges */
+.badge-breaking {
+  color: var(--breaking);
+  border: 1px solid var(--breaking);
+  padding: 1px 6px;
+  font-size: 11px;
+}
+
+.badge-deprecated {
+  color: var(--warning);
+  border: 1px solid var(--warning);
+  padding: 1px 6px;
+  font-size: 11px;
+}
+
+.badge-modernization {
+  color: var(--modernization);
+  border: 1px solid var(--modernization);
+  padding: 1px 6px;
+  font-size: 11px;
+}
+
+/* Risk band colors */
+.band-critical { color: var(--breaking); }
+.band-high     { color: #f97316; }
+.band-medium   { color: var(--warning); }
+.band-low      { color: var(--modernization); }
+
+/* Code blocks */
+pre, code {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 12px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+code {
+  padding: 1px 4px;
+}

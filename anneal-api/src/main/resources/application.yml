@@ -102,11 +102,6 @@ anneal:
 "%test":
   quarkus:
     datasource:
-      db-kind: h2
-      jdbc:
-        url: jdbc:h2:mem:anneal-test;DB_CLOSE_DELAY=-1
-    hibernate-orm:
-      database:
-        generation: drop-and-create
-    flyway:
-      migrate-at-start: false
+      devservices:
+        enabled: true
+        image-name: pgvector/pgvector:pg16
