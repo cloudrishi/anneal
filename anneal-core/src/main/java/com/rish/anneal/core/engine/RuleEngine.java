@@ -47,9 +47,7 @@ public class RuleEngine {
             for (DetectionPattern pattern : rule.getPatterns()) {
 
                 List<Finding> matched = matchPattern(cu, filePath, rule, pattern);
-                if (!matched.isEmpty()) {
-                    System.out.println("MATCH: " + rule.getRuleId() + " in " + filePath);
-                }
+
                 findings.addAll(matched);
             }
         }

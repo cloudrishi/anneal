@@ -12,6 +12,7 @@ import com.rish.anneal.core.model.ScanResult;
 import com.rish.anneal.core.scanner.BuildFileScanner;
 import com.rish.anneal.core.scanner.CodebaseScanner;
 import com.rish.anneal.core.scanner.VersionDetector;
+import com.rish.anneal.store.repository.ScanResultRepository;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
@@ -40,10 +41,12 @@ public class ScanResource {
     private final RuleRegistry ruleRegistry;
     private final RiskScoreCalculator riskScoreCalculator = new RiskScoreCalculator();
     private final VersionDetector versionDetector = new VersionDetector();
+    private ScanResultRepository repository;
 
     @Inject
-    public ScanResource(RuleRegistry ruleRegistry) {
+    public ScanResource(RuleRegistry ruleRegistry, ScanResultRepository repository) {
         this.ruleRegistry = ruleRegistry;
+        this.repository = repository;
     }
 
     @GET
@@ -85,8 +88,8 @@ public class ScanResource {
 
         JavaVersion target = JavaVersion.V25;
         List<MigrationRule> rules = ruleRegistry.rulesFor(source, target);
-        System.out.println("Rules for " + source + " → " + target + ": " + rules.size());
         
+
         CodebaseScanner scanner = new CodebaseScanner(
                 new RuleEngine(),
                 riskScoreCalculator,
@@ -95,6 +98,7 @@ public class ScanResource {
 
         ScanResult result = scanner.scan(repoPath, rules, source, target);
         ScanResponse response = ScanMapper.toResponse(result, riskScoreCalculator);
+        repository.save(result);
 
         return Response.ok(response).build();
     }
