@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: admin
+          POSTGRES_PASSWORD: admin
+          POSTGRES_DB: anneal
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Create sequences
+        run: |
+          PGPASSWORD=admin psql -h localhost -U admin -d anneal -c "
+            CREATE SEQUENCE IF NOT EXISTS scan_results_seq START WITH 1 INCREMENT BY 50;
+            CREATE SEQUENCE IF NOT EXISTS findings_seq START WITH 1 INCREMENT BY 50;
+            CREATE SEQUENCE IF NOT EXISTS code_embeddings_seq START WITH 1 INCREMENT BY 50;
+          "
+
+      - name: Run tests
+        run: ./gradlew test
+        env:
+          QUARKUS_DATASOURCE_DEVSERVICES_ENABLED: false
+          QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://localhost:5432/anneal
+          QUARKUS_DATASOURCE_USERNAME: admin
+          QUARKUS_DATASOURCE_PASSWORD: admin
+
+      - name: Upload test reports
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-reports
+          path: |
+            **/build/reports/tests/
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Build
+        run: ./gradlew build -x test
