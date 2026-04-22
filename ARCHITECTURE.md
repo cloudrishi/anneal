@@ -754,3 +754,57 @@ GET /api/scans/{scanId}
 | 2026-04-21 | CSS variables over Tailwind for design tokens | Direct control; easier to override per component |
 | 2026-04-21 | `@fontsource/ibm-plex-mono` | Self-hosted font — no Google Fonts dependency |
 | 2026-04-21 | Accept/reject/defer state is local only | Backend PATCH endpoint not yet wired — deferred to Phase 3 |
+
+---
+
+## CI/CD
+
+### GitHub Actions — `.github/workflows/ci.yml`
+
+Two jobs — `test` then `build`.
+
+**test job:**
+- Spins up `pgvector/pgvector:pg16` as a service
+- Sets up Java 25 Temurin
+- Runs `./gradlew test` with env vars pointing at the CI postgres
+- Uploads test reports as artifacts on failure
+
+**build job:**
+- Runs after `test` passes
+- Runs `./gradlew build -x test` — confirms full project compiles
+
+### decisions
+
+| Date | Decision | Rationale |
+|---|---|---|
+| 2026-04-22 | pgvector/pgvector:pg16 as CI service | Same image as dev — vector extension available, no plain postgres |
+| 2026-04-22 | Sequences in V2 Flyway migration | V1 checksum mismatch if modified after applied; clean migration history |
+| 2026-04-22 | `QUARKUS_DATASOURCE_DEVSERVICES_ENABLED: false` in CI | Disables dev services — CI provides real postgres service instead |
+| 2026-04-22 | `if: always()` on test report upload | Testers can always access HTML test reports, not just on failure |
+
+### current status
+
+| Layer | Status |
+|---|---|
+| Domain model | ✅ Complete — 12 model classes, all enums |
+| Rule engine | ✅ Complete — 22 rules, 6 categories, 8→25 coverage |
+| Risk calculator | ✅ Complete — weighted formula, per-boundary breakdown |
+| Scanner | ✅ Complete — AST, build file, version detection |
+| REST API | ✅ Complete — 4 endpoints, persistence, validation |
+| Persistence | ✅ Complete — Panache entities, Flyway migrations, pgvector tables |
+| Frontend | ✅ Complete — brutalist UI, scan panel, risk score, finding cards |
+| Tests | ✅ Complete — 38 tests, all passing locally and in CI |
+| CI | ✅ Complete — green on GitHub Actions |
+| LLM layer | 🔲 Next — fix enrichment, embeddings, Ollama + Anthropic |
+| History view | 🔲 Pending — list past scans in UI |
+| Finding status PATCH | 🔲 Pending — accept/reject/defer persistence |
+| README | 🔲 Pending |
+
+---
+
+## open questions (updated)
+
+- anneal-llm: LangChain4j `AiService` or direct `ChatLanguageModel` API?
+- Embedding strategy: embed per-finding or per-file chunk?
+- LLM prompt design: how much context to include per finding for best fix quality?
+- Should `referenceUrl` be denormalized onto `Finding` for the API response?
