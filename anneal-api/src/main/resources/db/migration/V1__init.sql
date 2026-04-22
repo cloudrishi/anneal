@@ -60,3 +60,7 @@ CREATE INDEX IF NOT EXISTS code_embeddings_embedding_idx
     ON anneal.code_embeddings
     USING ivfflat (embedding vector_cosine_ops)
     WITH (lists = 100);
+
+CREATE SEQUENCE IF NOT EXISTS scan_results_seq START WITH 1 INCREMENT BY 50;
+CREATE SEQUENCE IF NOT EXISTS findings_seq START WITH 1 INCREMENT BY 50;
+CREATE SEQUENCE IF NOT EXISTS code_embeddings_seq START WITH 1 INCREMENT BY 50;

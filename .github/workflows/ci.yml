@@ -37,14 +37,6 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Create sequences
-        run: |
-          PGPASSWORD=admin psql -h localhost -U admin -d anneal -c "
-            CREATE SEQUENCE IF NOT EXISTS scan_results_seq START WITH 1 INCREMENT BY 50;
-            CREATE SEQUENCE IF NOT EXISTS findings_seq START WITH 1 INCREMENT BY 50;
-            CREATE SEQUENCE IF NOT EXISTS code_embeddings_seq START WITH 1 INCREMENT BY 50;
-          "
-
       - name: Run tests
         run: ./gradlew test
         env:
