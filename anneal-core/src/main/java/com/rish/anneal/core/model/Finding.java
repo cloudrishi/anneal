@@ -50,6 +50,13 @@ public class Finding {
     /** The suggested fix for this finding. Null if no fix is available. */
     FixSuggestion fixSuggestion;
 
+    /**
+     * Link to the JEP or migration guide for this finding's rule.
+     * Denormalized from MigrationRule at detection time so the finding
+     * is self-contained and the mapper stays stateless.
+     */
+    String referenceUrl;
+
     /** Whether the developer has accepted, rejected, or deferred this finding. */
     @Builder.Default
     FindingStatus status = FindingStatus.OPEN;

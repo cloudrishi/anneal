@@ -140,10 +140,29 @@ public class ApiRemovalRules {
                 .effort(Effort.LOW)
                 .introducedIn(JavaVersion.V11)
                 .patterns(List.of(
+                        // IMPORT — catches wildcard and package-level imports
                         DetectionPattern.builder()
                                 .type(PatternType.IMPORT)
                                 .matcher("javax.annotation.*")
                                 .confidence(0.8f)
+                                .build(),
+                        // ANNOTATION — catches direct annotation usage, including FQN
+                        // usage without an import statement. Higher confidence because
+                        // these are the specific annotations most affected by the removal.
+                        DetectionPattern.builder()
+                                .type(PatternType.ANNOTATION)
+                                .matcher("PostConstruct")
+                                .confidence(0.9f)
+                                .build(),
+                        DetectionPattern.builder()
+                                .type(PatternType.ANNOTATION)
+                                .matcher("PreDestroy")
+                                .confidence(0.9f)
+                                .build(),
+                        DetectionPattern.builder()
+                                .type(PatternType.ANNOTATION)
+                                .matcher("Resource")
+                                .confidence(0.7f)   // lower — @Resource also exists in other namespaces
                                 .build()
                 ))
                 .fixTemplate(FixSuggestion.builder()

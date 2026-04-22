@@ -242,7 +242,7 @@ FindingStatus:  OPEN · ACCEPTED · REJECTED · DEFERRED
 | AST Analysis | JavaParser | 3.28.0 | Java 1–25 support, SymbolSolver for type resolution |
 | LLM Orchestration | LangChain4j | 1.13.0 | Java-native, Ollama + Anthropic support |
 | Embeddings | langchain4j-embeddings-all-minilm-l6-v2 | 0.36.2 | Pure Java ONNX, 384-dim vectors — pinned (not in 1.13.0) |
-| Vector Store | quarkus-langchain4j-pgvector | 0.26.2 | Quarkiverse extension — correct coordinate |
+| Vector Store | quarkus-langchain4j-pgvector | 1.8.4 | Quarkiverse extension — latest stable (Mar 2026) |
 | LLM — code | codellama:13b | via Ollama | Best local code reasoning on M1 Pro 32GB |
 | LLM — prose | llama3.1:8b | via Ollama | Better natural language for report narrative |
 | LLM — deep (opt-in) | claude-sonnet-4-6 | Anthropic API | Complex refactors requiring deep reasoning |
@@ -256,7 +256,7 @@ FindingStatus:  OPEN · ACCEPTED · REJECTED · DEFERRED
 
 | Wrong | Correct | Reason |
 |---|---|---|
-| `dev.langchain4j:langchain4j-pgvector:1.13.0` | `io.quarkiverse.langchain4j:quarkus-langchain4j-pgvector:0.26.2` | Artifact doesn't exist at 1.13.0 — use Quarkiverse extension |
+| `dev.langchain4j:langchain4j-pgvector:1.13.0` | `io.quarkiverse.langchain4j:quarkus-langchain4j-pgvector:1.8.4` | Artifact doesn't exist at 1.13.0 — use Quarkiverse extension, latest 1.8.4 |
 | `dev.langchain4j:langchain4j-embeddings-all-minilm-l6-v2:1.13.0` | same groupId, version `0.36.2` | Last release was Nov 2024; not updated to 1.13.0 |
 | `io.quarkus:quarkus-junit5` | `io.quarkus:quarkus-junit` | Renamed in Quarkus 3.31 |
 | `org.projectlombok:lombok:1.18.36` | `org.projectlombok:lombok:1.18.42` | 1.18.40+ required for Java 25 support |
@@ -549,8 +549,8 @@ Migrated from Maven to Gradle mid-project. Decision: a Java modernization tool t
 | `settings.gradle.kts` | Root settings — declares all submodules |
 | `build.gradle.kts` | Root build — common config, Quarkus BOM, shared dependencies |
 | `anneal-core/build.gradle.kts` | Core deps only — JavaParser |
-| `anneal-store/build.gradle.kts` | Persistence deps — Panache, Flyway, pgvector |
-| `anneal-llm/build.gradle.kts` | LLM deps — LangChain4j, Ollama, Anthropic, embeddings |
+| `anneal-store/build.gradle.kts` | Persistence deps — Panache, Flyway, quarkus-langchain4j-pgvector |
+| `anneal-llm/build.gradle.kts` | LLM deps — LangChain4j core, Ollama, Anthropic, embeddings (NOT pgvector) |
 | `anneal-api/build.gradle.kts` | REST layer — Quarkus plugin, health, OpenAPI |
 
 ### version catalog — `gradle/libs.versions.toml`
@@ -562,7 +562,7 @@ Replaces Maven's `dependencyManagement`. All versions in one file, referenced by
 quarkus = "3.33.1"
 langchain4j = "1.13.0"
 langchain4j-embeddings = "0.36.2"   # pinned — not released at 1.13.0
-langchain4j-pgvector = "0.26.2"     # Quarkiverse — different version stream
+langchain4j-pgvector = "1.8.4"      # Quarkiverse — different version stream, latest stable
 javaparser = "3.28.0"
 lombok = "1.18.42"                  # 1.18.40+ required for Java 25
 ```
@@ -798,6 +798,7 @@ Two jobs — `test` then `build`.
 | LLM layer | 🔲 Next — fix enrichment, embeddings, Ollama + Anthropic |
 | History view | 🔲 Pending — list past scans in UI |
 | Finding status PATCH | 🔲 Pending — accept/reject/defer persistence |
+| `referenceUrl` on Finding | 🔲 Pending — V3 Flyway migration, FindingEntity field, Finding model field |
 | README | 🔲 Pending |
 
 ---
@@ -807,4 +808,5 @@ Two jobs — `test` then `build`.
 - anneal-llm: LangChain4j `AiService` or direct `ChatLanguageModel` API?
 - Embedding strategy: embed per-finding or per-file chunk?
 - LLM prompt design: how much context to include per finding for best fix quality?
-- Should `referenceUrl` be denormalized onto `Finding` for the API response?
+- `referenceUrl` needs to be added to `FindingEntity` + `Finding` domain model + V3 Flyway migration before LLM layer wires it
+- Should `referenceUrl` be denormalized onto `Finding` for the API response? (answer: yes — V3 migration)

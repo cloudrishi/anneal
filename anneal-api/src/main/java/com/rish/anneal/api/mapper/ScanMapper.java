@@ -61,6 +61,7 @@ public class ScanMapper {
 
     /**
      * Maps a single Finding domain object to a FindingDto.
+     * referenceUrl is denormalized onto Finding at detection time — no rule lookup needed here.
      */
     public static FindingDto toFindingDto(Finding finding) {
         String fixType = finding.getFixSuggestion() != null
@@ -91,7 +92,7 @@ public class ScanMapper {
                 suggestedCode,
                 autoApplicable,
                 finding.getStatus().name(),
-                null
+                finding.getReferenceUrl()   // was null — now flows from Finding
         );
     }
 
@@ -118,6 +119,7 @@ public class ScanMapper {
 
     /**
      * Maps a ScanResultEntity and its FindingEntities to a ScanResponse.
+     * Note: requires FindingEntity.referenceUrl column — see V3 Flyway migration.
      */
     public static com.rish.anneal.api.dto.ScanResponse fromEntity(
             com.rish.anneal.store.entity.ScanResultEntity entity,
@@ -129,7 +131,7 @@ public class ScanMapper {
                         f.severity, f.effort, f.filePath, f.lineNumber,
                         f.originalCode, f.description, f.confidence,
                         f.affectsVersion, f.fixType, f.suggestedCode,
-                        f.autoApplicable, f.status, null))
+                        f.autoApplicable, f.status, f.referenceUrl))  // was null
                 .toList();
 
         return new com.rish.anneal.api.dto.ScanResponse(

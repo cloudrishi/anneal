@@ -3,6 +3,7 @@ package com.rish.anneal.core.engine;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.ImportDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.rish.anneal.core.model.DetectionPattern;
@@ -45,9 +46,7 @@ public class RuleEngine {
                 continue;
             }
             for (DetectionPattern pattern : rule.getPatterns()) {
-
                 List<Finding> matched = matchPattern(cu, filePath, rule, pattern);
-
                 findings.addAll(matched);
             }
         }
@@ -60,11 +59,12 @@ public class RuleEngine {
                                        MigrationRule rule,
                                        DetectionPattern pattern) {
         return switch (pattern.getType()) {
-            case IMPORT -> matchImport(cu, filePath, rule, pattern);
-            case API_CALL -> matchApiCall(cu, filePath, rule, pattern);
-            case AST_NODE -> matchAstNode(cu, filePath, rule, pattern);
-            case REFLECTION -> matchReflection(cu, filePath, rule, pattern);
-            case ANNOTATION, BUILD -> List.of(); // handled by dedicated scanners
+            case IMPORT      -> matchImport(cu, filePath, rule, pattern);
+            case API_CALL    -> matchApiCall(cu, filePath, rule, pattern);
+            case AST_NODE    -> matchAstNode(cu, filePath, rule, pattern);
+            case REFLECTION  -> matchReflection(cu, filePath, rule, pattern);
+            case ANNOTATION  -> matchAnnotation(cu, filePath, rule, pattern);
+            case BUILD       -> List.of(); // handled by BuildFileScanner
         };
     }
 
@@ -166,6 +166,44 @@ public class RuleEngine {
         return findings;
     }
 
+    // --- Annotation matching ---
+
+    /**
+     * Matches annotation usages by simple or fully-qualified name.
+     * <p>
+     * Complements IMPORT-based detection: catches usage of fully-qualified
+     * annotations that appear without an import statement, and provides
+     * line-level precision on the annotated element rather than the import block.
+     * <p>
+     * Matcher format: simple name only — e.g. {@code PostConstruct}.
+     * JavaParser normalises annotation names to their simple form in most cases;
+     * FQN matching ({@code javax.annotation.PostConstruct}) is also supported
+     * for fully-qualified usages in source.
+     */
+    private List<Finding> matchAnnotation(CompilationUnit cu,
+                                          String filePath,
+                                          MigrationRule rule,
+                                          DetectionPattern pattern) {
+        List<Finding> findings = new ArrayList<>();
+        String matcher = pattern.getMatcher();
+
+        // Support both simple name and FQN in the matcher
+        String simpleName = matcher.contains(".")
+                ? matcher.substring(matcher.lastIndexOf('.') + 1)
+                : matcher;
+
+        cu.findAll(AnnotationExpr.class).forEach(annotation -> {
+            String name = annotation.getNameAsString();
+            // Match simple name OR trailing segment of FQN usage in source
+            if (name.equals(simpleName) || name.equals(matcher) || name.endsWith("." + simpleName)) {
+                findings.add(buildFinding(rule, pattern, filePath,
+                        annotation.getBegin().map(p -> p.line).orElse(0),
+                        "@" + name));
+            }
+        });
+        return findings;
+    }
+
     // --- Finding builder ---
 
     private Finding buildFinding(MigrationRule rule,
@@ -187,6 +225,7 @@ public class RuleEngine {
                 .confidence(pattern.getConfidence())
                 .affectsVersion(rule.getIntroducedIn())
                 .fixSuggestion(rule.getFixTemplate())
+                .referenceUrl(rule.getReferenceUrl())   // denormalized here — mapper stays stateless
                 .build();
     }
 
