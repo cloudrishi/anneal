@@ -1,3 +1,5 @@
+![anneal](docs/anneal-logo.svg)
+
 # anneal
 
 > AI-powered Java migration assistant — analyze, plan, and modernize Java codebases to Java 25.
