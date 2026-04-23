@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: anneal-postgres
+    environment:
+      POSTGRES_DB: anneal
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    ports:
+      - "5432:5432"
+    volumes:
+      - anneal-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d anneal"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  anneal-pgdata:
