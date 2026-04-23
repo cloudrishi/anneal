@@ -1,17 +1,23 @@
 package com.rish.anneal.api.resource;
 
+import com.rish.anneal.api.dto.FindingDto;
 import com.rish.anneal.api.dto.ScanRequest;
 import com.rish.anneal.api.dto.ScanResponse;
 import com.rish.anneal.api.mapper.ScanMapper;
 import com.rish.anneal.api.registry.RuleRegistry;
 import com.rish.anneal.core.engine.RiskScoreCalculator;
 import com.rish.anneal.core.engine.RuleEngine;
+import com.rish.anneal.core.model.Finding;
 import com.rish.anneal.core.model.JavaVersion;
 import com.rish.anneal.core.model.MigrationRule;
 import com.rish.anneal.core.model.ScanResult;
 import com.rish.anneal.core.scanner.BuildFileScanner;
 import com.rish.anneal.core.scanner.CodebaseScanner;
 import com.rish.anneal.core.scanner.VersionDetector;
+import com.rish.anneal.llm.model.EnrichedFix;
+import com.rish.anneal.llm.service.EmbeddingService;
+import com.rish.anneal.llm.service.FixEnrichmentService;
+import com.rish.anneal.store.repository.EmbeddingRepository;
 import com.rish.anneal.store.repository.ScanResultRepository;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -20,9 +26,11 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+import org.jboss.logging.Logger;
 
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -40,15 +48,27 @@ import java.util.Optional;
 @Tag(name = "Scan", description = "Java codebase migration analysis")
 public class ScanResource {
 
+    private static final Logger log = Logger.getLogger(ScanResource.class);
+
     private final RuleRegistry ruleRegistry;
     private final ScanResultRepository repository;
+    private final FixEnrichmentService enrichmentService;
+    private final EmbeddingService embeddingService;
+    private final EmbeddingRepository embeddingRepository;
     private final RiskScoreCalculator riskScoreCalculator = new RiskScoreCalculator();
     private final VersionDetector versionDetector = new VersionDetector();
 
     @Inject
-    public ScanResource(RuleRegistry ruleRegistry, ScanResultRepository repository) {
+    public ScanResource(RuleRegistry ruleRegistry,
+                        ScanResultRepository repository,
+                        FixEnrichmentService enrichmentService,
+                        EmbeddingService embeddingService,
+                        EmbeddingRepository embeddingRepository) {
         this.ruleRegistry = ruleRegistry;
         this.repository = repository;
+        this.enrichmentService = enrichmentService;
+        this.embeddingService = embeddingService;
+        this.embeddingRepository = embeddingRepository;
     }
 
     @GET
@@ -99,7 +119,77 @@ public class ScanResource {
 
         ScanResult result = scanner.scan(repoPath, rules, source, target);
         repository.save(result);
-        ScanResponse response = ScanMapper.toResponse(result, riskScoreCalculator);
+
+        // --- LLM enrichment ---
+        // Enrich all findings with LLM-generated explanations.
+        // enrichAll() is failure-isolated — one bad LLM call does not fail the scan.
+        Map<String, EnrichedFix> enrichments = enrichmentService.enrichAll(result.getFindings());
+        log.infof("Enriched %d/%d findings for scan %s",
+                enrichments.size(), result.getFindings().size(), result.getScanId());
+
+        // --- Embeddings ---
+        // Embed each finding and persist to finding_embeddings for future similarity search.
+        // Failures are logged and skipped — embedding is non-critical to scan correctness.
+        for (Finding finding : result.getFindings()) {
+            try {
+                float[] vector = embeddingService.embed(finding);
+                String embeddedText = embeddingService.embeddingText(finding);
+                embeddingRepository.save(
+                        finding.getFindingId(),
+                        result.getScanId(),
+                        finding.getRuleId(),
+                        vector,
+                        embeddedText
+                );
+            } catch (Exception e) {
+                log.warnf("Embedding failed for finding %s: %s", finding.getFindingId(), e.getMessage());
+            }
+        }
+
+        // --- Build response with enriched findings ---
+        // Use overloaded toFindingDto(finding, explanation) to inject LLM explanation per finding.
+        List<Finding> sortedFindings = result.getFindings().stream()
+                .sorted(java.util.Comparator
+                        .comparing((Finding f) -> f.getSeverity().ordinal())
+                        .thenComparingDouble(f -> -f.getConfidence()))
+                .toList();
+
+        List<FindingDto> findingDtos = sortedFindings.stream()
+                .map(f -> {
+                    String explanation = enrichments.containsKey(f.getFindingId())
+                            ? enrichments.get(f.getFindingId()).explanation()
+                            : null;
+                    return ScanMapper.toFindingDto(f, explanation);
+                })
+                .toList();
+
+        // Build boundary scores
+        List<ScanResponse.BoundaryScoreDto> boundaryScores = riskScoreCalculator
+                .calculatePerBoundary(result.getFindings())
+                .stream()
+                .map(bs -> new ScanResponse.BoundaryScoreDto(
+                        bs.from().toString(),
+                        bs.to().toString(),
+                        bs.score(),
+                        bs.band().name(),
+                        bs.findingCount()
+                ))
+                .toList();
+
+        ScanResponse response = new ScanResponse(
+                result.getScanId(),
+                result.getRepoPath(),
+                result.getDetectedVersion().toString(),
+                result.getTargetVersion().toString(),
+                result.getRiskScore(),
+                riskScoreCalculator.band(result.getRiskScore()).name(),
+                result.getPhase().name(),
+                result.getFilesScanned(),
+                result.getFilesWithFindings(),
+                findingDtos,
+                boundaryScores,
+                result.getScannedAt().toString()
+        );
 
         return Response.ok(response).build();
     }

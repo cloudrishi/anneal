@@ -21,6 +21,7 @@ package com.rish.anneal.api.dto;
  * @param autoApplicable whether the fix can be applied without developer review
  * @param status         OPEN · ACCEPTED · REJECTED · DEFERRED
  * @param referenceUrl   link to JEP or migration guide
+ * @param llmExplanation LLM-generated rationale for the fix — null until enriched
  */
 public record FindingDto(
         String findingId,
@@ -39,5 +40,7 @@ public record FindingDto(
         String suggestedCode,
         boolean autoApplicable,
         String status,
-        String referenceUrl
-) {}
+        String referenceUrl,
+        String llmExplanation
+) {
+}

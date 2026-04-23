@@ -16,3 +16,9 @@ node_modules/
 .gradle/
 build/
 !gradle/wrapper/gradle-wrapper.jar
+
+out/
+*.bin
+*.lock
+*.probe
+*.dat

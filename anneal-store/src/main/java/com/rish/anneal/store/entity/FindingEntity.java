@@ -1,12 +1,7 @@
 package com.rish.anneal.store.entity;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 import java.time.Instant;
 
@@ -69,6 +64,12 @@ public class FindingEntity extends PanacheEntity {
 
     @Column(name = "status", nullable = false)
     public String status;
+
+    /**
+     * Denormalized from MigrationRule at scan time. Nullable — older rows will be NULL.
+     */
+    @Column(name = "reference_url", length = 512)
+    public String referenceUrl;
 
     @Column(name = "created_at", nullable = false)
     public Instant createdAt = Instant.now();

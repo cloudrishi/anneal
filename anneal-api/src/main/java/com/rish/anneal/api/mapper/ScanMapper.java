@@ -92,7 +92,44 @@ public class ScanMapper {
                 suggestedCode,
                 autoApplicable,
                 finding.getStatus().name(),
-                finding.getReferenceUrl()   // was null — now flows from Finding
+                finding.getReferenceUrl(),
+                null    // llmExplanation — populated by ScanResource post-enrichment
+        );
+    }
+
+    /**
+     * Maps a single Finding with a pre-resolved LLM explanation to a FindingDto.
+     * Used by ScanResource after enrichAll() returns.
+     */
+    public static FindingDto toFindingDto(Finding finding, String llmExplanation) {
+        String fixType = finding.getFixSuggestion() != null
+                ? finding.getFixSuggestion().getFixType().name()
+                : null;
+        String suggestedCode = finding.getFixSuggestion() != null
+                ? finding.getFixSuggestion().getSuggestedCode()
+                : null;
+        boolean autoApplicable = finding.getFixSuggestion() != null
+                && finding.getFixSuggestion().isAutoApplicable();
+
+        return new FindingDto(
+                finding.getFindingId(),
+                finding.getRuleId(),
+                finding.getRuleName(),
+                finding.getCategory().name(),
+                finding.getSeverity().name(),
+                finding.getEffort().name(),
+                finding.getFilePath(),
+                finding.getLineNumber(),
+                finding.getOriginalCode(),
+                finding.getDescription(),
+                finding.getConfidence(),
+                finding.getAffectsVersion().toString(),
+                fixType,
+                suggestedCode,
+                autoApplicable,
+                finding.getStatus().name(),
+                finding.getReferenceUrl(),
+                llmExplanation
         );
     }
 
@@ -131,7 +168,7 @@ public class ScanMapper {
                         f.severity, f.effort, f.filePath, f.lineNumber,
                         f.originalCode, f.description, f.confidence,
                         f.affectsVersion, f.fixType, f.suggestedCode,
-                        f.autoApplicable, f.status, f.referenceUrl))  // was null
+                        f.autoApplicable, f.status, f.referenceUrl, null))  // llmExplanation not stored
                 .toList();
 
         return new com.rish.anneal.api.dto.ScanResponse(

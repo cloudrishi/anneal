@@ -20,11 +20,19 @@ subprojects {
         mavenCentral()
     }
 
-    // Import Quarkus BOM — manages versions for all Quarkus artifacts
+    configurations.all {
+        exclude(group = "dev.langchain4j", module = "langchain4j-http-client-jdk")
+    }
+
     dependencies {
+        // Quarkus BOM — manages all Quarkus artifact versions
         implementation(enforcedPlatform("io.quarkus.platform:quarkus-bom:3.33.1"))
-        implementation(enforcedPlatform("io.quarkus.platform:quarkus-langchain4j-bom:3.33.1"))
-    
+
+        // LangChain4j BOM 1.13.0 — declared directly, no quarkus-langchain4j-bom
+        // quarkus-langchain4j-bom locked LangChain4j to 1.11.0 via strictly constraints
+        // which cannot be overridden. Dropping it here; quarkus-langchain4j-pgvector
+        // in anneal-store declares its own Quarkiverse version (1.8.4) independently.
+        implementation(enforcedPlatform("dev.langchain4j:langchain4j-bom:1.13.0"))
     }
 
     // Common dependencies across all modules

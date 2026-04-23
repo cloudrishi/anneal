@@ -16,5 +16,7 @@ dependencies {
     implementation(libs.quarkus.container.image.docker)
     implementation(libs.quarkus.hibernate.validator)
     implementation("io.quarkus:quarkus-config-yaml")
+    implementation("io.quarkiverse.langchain4j:quarkus-langchain4j-ollama:1.8.4")
+
     testImplementation(libs.rest.assured)
 }
