@@ -9,7 +9,7 @@ import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.rish.anneal.core.model.DetectionPattern;
 import com.rish.anneal.core.model.Finding;
 import com.rish.anneal.core.model.JavaVersion;
-import com.rish.anneal.core.model.MigrationRule;
+import com.rish.anneal.core.rule.MigrationRule;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -59,12 +59,12 @@ public class RuleEngine {
                                        MigrationRule rule,
                                        DetectionPattern pattern) {
         return switch (pattern.getType()) {
-            case IMPORT      -> matchImport(cu, filePath, rule, pattern);
-            case API_CALL    -> matchApiCall(cu, filePath, rule, pattern);
-            case AST_NODE    -> matchAstNode(cu, filePath, rule, pattern);
-            case REFLECTION  -> matchReflection(cu, filePath, rule, pattern);
-            case ANNOTATION  -> matchAnnotation(cu, filePath, rule, pattern);
-            case BUILD       -> List.of(); // handled by BuildFileScanner
+            case IMPORT -> matchImport(cu, filePath, rule, pattern);
+            case API_CALL -> matchApiCall(cu, filePath, rule, pattern);
+            case AST_NODE -> matchAstNode(cu, filePath, rule, pattern);
+            case REFLECTION -> matchReflection(cu, filePath, rule, pattern);
+            case ANNOTATION -> matchAnnotation(cu, filePath, rule, pattern);
+            case BUILD -> List.of(); // handled by BuildFileScanner
         };
     }
 

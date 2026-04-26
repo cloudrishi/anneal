@@ -1,17 +1,19 @@
 package com.rish.anneal.llm.model;
 
 /**
- * Result of LLM enrichment for a single finding.
- * Carries the generated explanation and metadata — does not mutate the Finding.
+ * Result of a single LLM enrichment call.
  *
- * @param findingId   the finding this enrichment applies to
- * @param explanation LLM-generated rationale — why the fix is correct and what it achieves
- * @param modelUsed   model that produced this explanation e.g. codellama:13b
- * @param latencyMs   time taken for the LLM call in milliseconds
+ * <p>{@code modelUsed} carries the raw model name string (e.g. "codellama:13b",
+ * "llama3.1:8b", "claude-sonnet-4-6") so the API layer can surface it in
+ * {@code FindingDto} and the UI can render a "via &lt;model&gt;" attribution label
+ * without hardcoding model names in the frontend.
+ *
+ * <p>This record is never persisted — it is runtime-only.
+ * History retrieval returns {@code llmExplanation: null} intentionally.
  */
 public record EnrichedFix(
         String findingId,
         String explanation,
-        String modelUsed,
-        long latencyMs
-) {}
+        LlmModel model
+) {
+}

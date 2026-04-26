@@ -1,14 +1,6 @@
 package com.rish.anneal.core.rule;
 
-import com.rish.anneal.core.model.DetectionPattern;
-import com.rish.anneal.core.model.Effort;
-import com.rish.anneal.core.model.FixSuggestion;
-import com.rish.anneal.core.model.FixType;
-import com.rish.anneal.core.model.JavaVersion;
-import com.rish.anneal.core.model.MigrationRule;
-import com.rish.anneal.core.model.PatternType;
-import com.rish.anneal.core.model.RuleCategory;
-import com.rish.anneal.core.model.Severity;
+import com.rish.anneal.core.model.*;
 
 import java.util.List;
 

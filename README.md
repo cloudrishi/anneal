@@ -43,6 +43,8 @@ POST /api/scan
       "originalCode": "import sun.misc.Unsafe;",
       "referenceUrl": "https://openjdk.org/jeps/261",
       "llmExplanation": "This code pattern is problematic because it uses the sun.misc package, which was not meant for public use and is not part of the JDK API. The suggested fix replaces the import with the public API equivalent, which is safer and more portable. Use --add-exports as a temporary workaround only until the code is updated.",
+      "llmProvider": "OLLAMA",
+      "llmModel": "codellama:13b",
       "autoApplicable": false,
       "status": "OPEN"
     },
@@ -55,6 +57,8 @@ POST /api/scan
       "originalCode": "protected void finalize() throws Throwable",
       "referenceUrl": "https://openjdk.org/jeps/421",
       "llmExplanation": "The detected code is deprecated since Java 9 because it is not guaranteed to be called by the garbage collector. The suggested fix replaces the implementation with the Cleaner API, which provides a more reliable way to perform cleanup actions when resources are no longer needed.",
+      "llmProvider": "OLLAMA",
+      "llmModel": "llama3.1:8b",
       "autoApplicable": false,
       "status": "OPEN"
     }
@@ -219,6 +223,15 @@ anneal:
 
 38 tests — unit + integration, all passing. Integration tests use a real pgvector postgres instance via Quarkus dev
 services.
+
+To validate `claude-sonnet-4-6` explanation quality against the test-legacy fixture:
+
+```bash
+ANTHROPIC_API_KEY=sk-ant-... ./gradlew :anneal-llm:test --tests "*CloudModelValidationIT" --info
+```
+
+This test is opt-in — skipped automatically when `ANTHROPIC_API_KEY` is not set. It prints explanations from both
+local and cloud models side-by-side for manual review.
 
 ---
 

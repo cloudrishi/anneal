@@ -12,8 +12,8 @@ import com.rish.anneal.core.engine.RuleEngine;
 import com.rish.anneal.core.model.Finding;
 import com.rish.anneal.core.model.JavaVersion;
 import com.rish.anneal.core.model.MigrationPhase;
-import com.rish.anneal.core.model.MigrationRule;
 import com.rish.anneal.core.model.ScanResult;
+import com.rish.anneal.core.rule.MigrationRule;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -28,7 +28,7 @@ import java.util.stream.Stream;
 /**
  * Walks a Java repository, parses every .java file, applies the rule engine,
  * and assembles a ScanResult.
- *
+ * <p>
  * Stateless — create once, scan many times.
  */
 public class CodebaseScanner {

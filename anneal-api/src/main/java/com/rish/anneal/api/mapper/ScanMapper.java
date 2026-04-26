@@ -2,9 +2,11 @@ package com.rish.anneal.api.mapper;
 
 import com.rish.anneal.api.dto.FindingDto;
 import com.rish.anneal.api.dto.ScanResponse;
+import com.rish.anneal.api.model.LlmProvider;
 import com.rish.anneal.core.engine.RiskScoreCalculator;
 import com.rish.anneal.core.model.Finding;
 import com.rish.anneal.core.model.ScanResult;
+import com.rish.anneal.llm.model.EnrichedFix;
 
 import java.util.Comparator;
 import java.util.List;
@@ -93,15 +95,18 @@ public class ScanMapper {
                 autoApplicable,
                 finding.getStatus().name(),
                 finding.getReferenceUrl(),
-                null    // llmExplanation — populated by ScanResource post-enrichment
+                null,   // llmExplanation
+                null,   // llmProvider
+                null    // llmModel
         );
     }
 
     /**
-     * Maps a single Finding with a pre-resolved LLM explanation to a FindingDto.
+     * Maps a single Finding with a pre-resolved EnrichedFix to a FindingDto.
      * Used by ScanResource after enrichAll() returns.
+     * Passing null fix is safe — all three LLM fields will be null.
      */
-    public static FindingDto toFindingDto(Finding finding, String llmExplanation) {
+    public static FindingDto toFindingDto(Finding finding, EnrichedFix fix) {
         String fixType = finding.getFixSuggestion() != null
                 ? finding.getFixSuggestion().getFixType().name()
                 : null;
@@ -110,6 +115,15 @@ public class ScanMapper {
                 : null;
         boolean autoApplicable = finding.getFixSuggestion() != null
                 && finding.getFixSuggestion().isAutoApplicable();
+
+        String llmExplanation = fix != null ? fix.explanation() : null;
+        LlmProvider llmProvider = fix != null
+                ? switch (fix.model()) {
+            case com.rish.anneal.llm.model.LlmModel.Anthropic a -> LlmProvider.ANTHROPIC;
+            case com.rish.anneal.llm.model.LlmModel.Ollama o -> LlmProvider.OLLAMA;
+        }
+                : null;
+        String llmModel = fix != null ? fix.model().modelName() : null;
 
         return new FindingDto(
                 finding.getFindingId(),
@@ -129,7 +143,9 @@ public class ScanMapper {
                 autoApplicable,
                 finding.getStatus().name(),
                 finding.getReferenceUrl(),
-                llmExplanation
+                llmExplanation,
+                llmProvider,
+                llmModel
         );
     }
 
@@ -168,7 +184,11 @@ public class ScanMapper {
                         f.severity, f.effort, f.filePath, f.lineNumber,
                         f.originalCode, f.description, f.confidence,
                         f.affectsVersion, f.fixType, f.suggestedCode,
-                        f.autoApplicable, f.status, f.referenceUrl, null))  // llmExplanation not stored
+                        f.autoApplicable, f.status, f.referenceUrl,
+                        null, // llmExplanation not stored
+                        null, // llmProvider not stored
+                        null // llmModel not stored
+                ))
                 .toList();
 
         return new com.rish.anneal.api.dto.ScanResponse(

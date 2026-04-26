@@ -1,5 +1,6 @@
-package com.rish.anneal.core.model;
+package com.rish.anneal.core.rule;
 
+import com.rish.anneal.core.model.*;
 import lombok.Builder;
 import lombok.Value;
 
@@ -9,7 +10,7 @@ import java.util.List;
  * A single migration rule — defines what to detect and what to suggest.
  * Rules are code-driven, not data-driven. Each rule is a Java class
  * registered with the RuleRegistry.
- *
+ * <p>
  * Rules are immutable and stateless. The rule engine applies them to AST nodes.
  */
 @Value
@@ -23,16 +24,24 @@ public class MigrationRule {
      */
     String ruleId;
 
-    /** Display name for the rule. */
+    /**
+     * Display name for the rule.
+     */
     String name;
 
-    /** Category of migration concern. */
+    /**
+     * Category of migration concern.
+     */
     RuleCategory category;
 
-    /** Severity of violations detected by this rule. */
+    /**
+     * Severity of violations detected by this rule.
+     */
     Severity severity;
 
-    /** Estimated effort to fix violations of this rule. */
+    /**
+     * Estimated effort to fix violations of this rule.
+     */
     Effort effort;
 
     /**

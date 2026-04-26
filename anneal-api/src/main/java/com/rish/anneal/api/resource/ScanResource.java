@@ -9,8 +9,8 @@ import com.rish.anneal.core.engine.RiskScoreCalculator;
 import com.rish.anneal.core.engine.RuleEngine;
 import com.rish.anneal.core.model.Finding;
 import com.rish.anneal.core.model.JavaVersion;
-import com.rish.anneal.core.model.MigrationRule;
 import com.rish.anneal.core.model.ScanResult;
+import com.rish.anneal.core.rule.MigrationRule;
 import com.rish.anneal.core.scanner.BuildFileScanner;
 import com.rish.anneal.core.scanner.CodebaseScanner;
 import com.rish.anneal.core.scanner.VersionDetector;
@@ -111,6 +111,13 @@ public class ScanResource {
         JavaVersion target = JavaVersion.V25;
         List<MigrationRule> rules = ruleRegistry.rulesFor(source, target);
 
+        // Index by ruleId for O(1) lookup in enrichAll()
+        Map<String, MigrationRule> ruleById = rules.stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        MigrationRule::getRuleId,
+                        java.util.function.Function.identity()
+                ));
+
         CodebaseScanner scanner = new CodebaseScanner(
                 new RuleEngine(),
                 riskScoreCalculator,
@@ -121,9 +128,7 @@ public class ScanResource {
         repository.save(result);
 
         // --- LLM enrichment ---
-        // Enrich all findings with LLM-generated explanations.
-        // enrichAll() is failure-isolated — one bad LLM call does not fail the scan.
-        Map<String, EnrichedFix> enrichments = enrichmentService.enrichAll(result.getFindings());
+        Map<String, EnrichedFix> enrichments = enrichmentService.enrichAll(result.getFindings(), ruleById);
         log.infof("Enriched %d/%d findings for scan %s",
                 enrichments.size(), result.getFindings().size(), result.getScanId());
 
@@ -155,12 +160,7 @@ public class ScanResource {
                 .toList();
 
         List<FindingDto> findingDtos = sortedFindings.stream()
-                .map(f -> {
-                    String explanation = enrichments.containsKey(f.getFindingId())
-                            ? enrichments.get(f.getFindingId()).explanation()
-                            : null;
-                    return ScanMapper.toFindingDto(f, explanation);
-                })
+                .map(f -> ScanMapper.toFindingDto(f, enrichments.get(f.getFindingId())))
                 .toList();
 
         // Build boundary scores

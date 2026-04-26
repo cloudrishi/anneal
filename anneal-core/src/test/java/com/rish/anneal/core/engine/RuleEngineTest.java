@@ -2,16 +2,8 @@ package com.rish.anneal.core.engine;
 
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
-import com.rish.anneal.core.model.DetectionPattern;
-import com.rish.anneal.core.model.Effort;
-import com.rish.anneal.core.model.Finding;
-import com.rish.anneal.core.model.FixSuggestion;
-import com.rish.anneal.core.model.FixType;
-import com.rish.anneal.core.model.JavaVersion;
-import com.rish.anneal.core.model.MigrationRule;
-import com.rish.anneal.core.model.PatternType;
-import com.rish.anneal.core.model.RuleCategory;
-import com.rish.anneal.core.model.Severity;
+import com.rish.anneal.core.model.*;
+import com.rish.anneal.core.rule.MigrationRule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

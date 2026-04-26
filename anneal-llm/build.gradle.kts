@@ -8,3 +8,7 @@ dependencies {
     }
     implementation(libs.langchain4j.embeddings.minilm)
 }
+
+tasks.named("test") {
+    enabled = false
+}

@@ -1,0 +1,163 @@
+# anneal
+
+> AI-powered Java migration assistant. Analyzes a Java codebase, detects version-specific
+> risks and breaking changes (Java 8 → 25), and produces an incremental migration plan with
+> code-level fix suggestions grounded in static analysis — not generic advice.
+>
+> Co-pilot, not autopilot. The tool surfaces, explains, and suggests. The developer decides.
+
+## Project
+
+- Docs: https://github.com/cloudrishi/anneal/blob/main/ARCHITECTURE.md
+- Repo: https://github.com/cloudrishi/anneal
+
+## Architecture
+
+anneal is a multi-module Gradle (Kotlin DSL) project running on Java 25 / Quarkus 3.33.1.
+Detection is fully deterministic — AST traversal via JavaParser, no LLM involvement.
+LLM enrichment adds prose explanations to findings after detection completes.
+
+```
+anneal/
+├── anneal-core/    # Domain model, rule engine, scanner — pure Java, no CDI
+├── anneal-api/     # Quarkus REST layer — 4 endpoints, RuleRegistry, ScanResource
+├── anneal-llm/     # LangChain4j enrichment — Ollama + Anthropic, ONNX embeddings
+├── anneal-store/   # Panache entities, Flyway migrations V1–V5, pgvector
+└── anneal-ui/      # Next.js 15 frontend — brutalist dark, IBM Plex Mono, molten orange
+```
+
+## Key design decisions
+
+- Detection is LLM-free. AST traversal and rule matching are deterministic; no hallucinations.
+- LLM enriches fix explanations only. Version facts from static analysis are injected as hard
+  constraints into prompts to prevent model hallucination of Java version numbers.
+- Local-first. Default provider is Ollama (codellama:13b for BREAKING findings, llama3.1:8b
+  for prose). Anthropic (claude-sonnet-4-6) is opt-in via `allow-cloud-fallback: true`.
+- Code never leaves the machine unless `allow-cloud-fallback: true` is explicitly set.
+- Rules are Java classes, not database rows — testable, version-controlled, PR-reviewable.
+- `autoApplicable: false` findings are never applied without developer approval.
+- `llmExplanation` is not persisted — runtime enrichment only; history returns null honestly.
+
+## Migration path
+
+```
+Java 8 → Java 11 (LTS) → Java 17 (LTS) → Java 21 (LTS) → Java 25 (LTS)
+```
+
+Java 9 is skipped as an intermediate stop (not LTS) but its risks (JPMS) are detected.
+
+## Rule engine
+
+22 rules across 6 categories covering Java 8 → 25:
+
+| Category    | Rules | Boundary            |
+|-------------|-------|---------------------|
+| JPMS        | 4     | 8 → 9               |
+| API_REMOVAL | 5     | 9 → 11, 17 → 21     |
+| DEPRECATION | 3     | 11 → 17, 21 → 25    |
+| LANGUAGE    | 4     | 8 → 25 (modernize)  |
+| CONCURRENCY | 3     | 21 → 25 (modernize) |
+| BUILD       | 3     | All boundaries      |
+
+Detection patterns: AST_NODE, IMPORT, API_CALL, ANNOTATION, REFLECTION, BUILD.
+
+## Data model (core types)
+
+**Finding** — one per detected issue: `findingId`, `ruleId`, `severity` (BREAKING /
+DEPRECATED / MODERNIZATION), `filePath`, `lineNumber`, `originalCode`, `confidence`,
+`referenceUrl`, `status` (OPEN / ACCEPTED / REJECTED / DEFERRED).
+
+**MigrationRule** — `ruleId`, `category`, `severity`, `effort` (TRIVIAL / LOW / MEDIUM /
+HIGH / MANUAL), `introducedIn` (JavaVersion), `removedIn` (JavaVersion, nullable),
+`patterns`, `fixTemplate` (FixSuggestion), `referenceUrl`.
+
+**ScanResult** — `scanId`, `repoPath`, `detectedVersion`, `targetVersion` (always V25),
+`findings`, `riskScore` (0–100), `phase` (ANALYSIS / PLANNING / FIXING / VALIDATION).
+
+**EnrichedFix** — runtime only, not persisted: `findingId`, `explanation`, `modelUsed`.
+
+## REST API
+
+| Method | Path                 | Description                                    |
+|--------|----------------------|------------------------------------------------|
+| GET    | /api/health          | Liveness                                       |
+| POST   | /api/scan            | Scan repo — returns findings + LLM explanation |
+| GET    | /api/scans           | List past scans (summary, no findings)         |
+| GET    | /api/scans/{scanId}  | Full scan — llmExplanation is null on history  |
+
+POST /api/scan flow: version detection → rule filtering → AST scan → persist →
+LLM enrichment (failure-isolated per finding) → ONNX embed → pgvector store → response.
+
+## LLM layer
+
+Model routing:
+- MANUAL effort + cloud enabled → claude-sonnet-4-6 (deep reasoning)
+- BREAKING severity             → codellama:13b (JVM/API internals)
+- DEPRECATED / MODERNIZATION   → llama3.1:8b (natural language prose)
+
+Key implementation notes:
+- Uses `ChatModel.chat(SystemMessage, UserMessage)` directly — not AiService proxies —
+  because system messages are per-finding, not per-session.
+- `FixPrompts.clean()` strips codellama:13b instruction-tuning artefacts ([INST], <<SYS>>).
+- MiniLM-L6-v2 embeddings (384-dim, ONNX, no network) per finding for similarity search.
+- `EmbeddingRepository.findSimilar()` uses pgvector cosine operator (`<=>`) across past scans.
+
+## Tech stack
+
+| Layer          | Technology                           | Version  |
+|----------------|--------------------------------------|----------|
+| Backend        | Quarkus LTS                          | 3.33.1   |
+| AST            | JavaParser                           | 3.28.0   |
+| LLM            | LangChain4j                          | 1.13.0   |
+| Embeddings     | langchain4j-embeddings-all-minilm-l6 | 0.36.2   |
+| Vector store   | quarkus-langchain4j-pgvector         | 1.8.4    |
+| Database       | PostgreSQL + pgvector                | pg16     |
+| Frontend       | Next.js + TypeScript                 | 15 / 5   |
+| Build          | Gradle Kotlin DSL                    | 9.4.1    |
+| JDK            | Temurin                              | 25.0.2   |
+| Lombok         | Lombok                               | 1.18.42  |
+
+## Known dependency constraints (learned during implementation)
+
+- `langchain4j-embeddings-all-minilm-l6-v2` last released at 0.36.2 — not updated to 1.13.0.
+- `quarkus-langchain4j-bom` must NOT be declared alongside `langchain4j-bom` — two
+  `enforcedPlatform` with `strictly` constraints deadlock Gradle resolution.
+- `langchain4j-http-client-jdk` must be globally excluded — conflicts with Quarkiverse
+  JAX-RS HTTP client at runtime.
+- `ChatModel` (not `ChatLanguageModel`) and `.chatModel()` (not `.chatLanguageModel()`) —
+  renamed in LangChain4j 1.0 GA.
+- Lombok 1.18.40+ required for Java 25 support.
+- `io.quarkus:quarkus-junit` (not `quarkus-junit5`) — renamed in Quarkus 3.31.
+
+## Testing
+
+38 tests, all passing in CI (GitHub Actions):
+- `RiskScoreCalculatorTest` — 14 unit tests, includes score-66 regression anchor
+- `RuleEngineTest` — 9 unit tests (AST, IMPORT, API_CALL, ANNOTATION, REFLECTION)
+- `VersionDetectorTest` — 9 unit tests (Maven, Gradle, edge cases)
+- `ScanResourceTest` — 6 integration tests against real pgvector/pgvector:pg16
+
+CI: test job (pgvector service + Java 25 Temurin) → build job.
+Cloud model validation: `CloudModelValidationIT` — opt-in, requires `ANTHROPIC_API_KEY`.
+
+## Configuration
+
+```yaml
+anneal:
+  llm:
+    provider: ollama
+    ollama:
+      base-url: http://localhost:11434
+      fix-model: codellama:13b
+      prose-model: llama3.1:8b
+    anthropic:
+      api-key: ${ANTHROPIC_API_KEY:}
+      model: claude-sonnet-4-6
+    allow-cloud-fallback: false   # code never leaves machine without this
+    timeout-seconds: 120
+    enrichment-enabled: true
+```
+
+## Optional
+
+- https://github.com/cloudrishi/anneal/blob/main/ARCHITECTURE.md

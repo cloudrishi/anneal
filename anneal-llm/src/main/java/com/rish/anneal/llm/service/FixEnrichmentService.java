@@ -1,32 +1,39 @@
 package com.rish.anneal.llm.service;
 
 import com.rish.anneal.core.model.Finding;
+import com.rish.anneal.core.rule.MigrationRule;
 import com.rish.anneal.llm.model.EnrichedFix;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
- * Enriches findings with LLM-generated fix explanations.
- * Implementations are responsible for model selection and prompt construction.
+ * Contract for LLM-based fix enrichment.
+ *
+ * <p>The {@code MigrationRule} is required alongside each {@code Finding} so that
+ * deterministic facts ({@code introducedIn}, {@code removedIn}, {@code effort}) can
+ * be injected into the prompt as hard constraints. This prevents the model from
+ * substituting its own (potentially hallucinated) version knowledge.
+ *
+ * <p>Implementations must be failure-isolated: a bad LLM call for one finding must
+ * never prevent enrichment of the others, and must never propagate to the scan response.
  */
 public interface FixEnrichmentService {
 
     /**
-     * Enriches a single finding with an LLM-generated explanation.
-     *
-     * @param finding the finding to enrich
-     * @return enrichment result — never null; explanation is empty string on failure
+     * Enrich a single finding. Returns {@code Optional.empty()} on LLM failure,
+     * blank response, or when enrichment is disabled.
      */
-    EnrichedFix enrich(Finding finding);
+    Optional<EnrichedFix> enrich(Finding finding, MigrationRule rule);
 
     /**
-     * Enriches a list of findings.
-     * Returns a map of findingId → EnrichedFix for easy lookup at the call site.
-     * Failures are isolated — one bad LLM call does not fail the batch.
+     * Enrich all findings in a scan. Skips any finding whose ruleId is absent from
+     * {@code ruleById} (with a warning log) rather than throwing.
      *
-     * @param findings findings to enrich
-     * @return map of findingId to EnrichedFix, may be smaller than input on partial failure
+     * @param findings  findings produced by the rule engine for this scan
+     * @param ruleById  map of ruleId → MigrationRule for all active rules in this scan
+     * @return          map of findingId → EnrichedFix for successful enrichments only
      */
-    Map<String, EnrichedFix> enrichAll(List<Finding> findings);
+    Map<String, EnrichedFix> enrichAll(List<Finding> findings, Map<String, MigrationRule> ruleById);
 }

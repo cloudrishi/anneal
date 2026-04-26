@@ -1,7 +1,6 @@
 package com.rish.anneal.api.registry;
 
 import com.rish.anneal.core.model.JavaVersion;
-import com.rish.anneal.core.model.MigrationRule;
 import com.rish.anneal.core.model.RuleCategory;
 import com.rish.anneal.core.rule.*;
 import jakarta.enterprise.context.ApplicationScoped;

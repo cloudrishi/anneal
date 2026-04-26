@@ -1,8 +1,14 @@
 package com.rish.anneal.api.dto;
 
+import com.rish.anneal.api.model.LlmProvider;
+
 /**
- * DTO representation of a Finding for the REST API response.
- * Snake_case field names match the frontend convention.
+ * API representation of a single migration finding, returned by POST /api/scan
+ * and GET /api/scans/{scanId}.
+ *
+ * <p>{@code llmExplanation}, {@code llmProvider}, and {@code llmModel} are
+ * runtime-only — they are populated during the scan response and are {@code null}
+ * on history retrieval (GET /api/scans/{scanId}). They are never persisted.
  *
  * @param findingId      unique identifier for this finding
  * @param ruleId         rule that produced this finding e.g. JPMS_SUN_IMPORT
@@ -22,6 +28,8 @@ package com.rish.anneal.api.dto;
  * @param status         OPEN · ACCEPTED · REJECTED · DEFERRED
  * @param referenceUrl   link to JEP or migration guide
  * @param llmExplanation LLM-generated rationale for the fix — null until enriched
+ * @param llmProvider    which provider produced the explanation — OLLAMA · ANTHROPIC · null
+ * @param llmModel       model name as configured e.g. codellama:13b — null until enriched
  */
 public record FindingDto(
         String findingId,
@@ -41,6 +49,8 @@ public record FindingDto(
         boolean autoApplicable,
         String status,
         String referenceUrl,
-        String llmExplanation
+        String llmExplanation,
+        LlmProvider llmProvider,
+        String llmModel
 ) {
 }

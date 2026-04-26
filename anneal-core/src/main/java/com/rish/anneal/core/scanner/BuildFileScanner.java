@@ -1,11 +1,10 @@
 package com.rish.anneal.core.scanner;
 
-import com.rish.anneal.core.model.Effort;
 import com.rish.anneal.core.model.Finding;
 import com.rish.anneal.core.model.JavaVersion;
-import com.rish.anneal.core.model.MigrationRule;
 import com.rish.anneal.core.model.PatternType;
 import com.rish.anneal.core.model.RuleCategory;
+import com.rish.anneal.core.rule.MigrationRule;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -18,7 +17,7 @@ import java.util.logging.Logger;
 /**
  * Scans pom.xml and build.gradle files for BUILD category rule violations.
  * Text-based scanning — no XML/Gradle parser needed for the patterns we detect.
- *
+ * <p>
  * Separated from CodebaseScanner because build file scanning
  * is fundamentally different from Java AST scanning.
  */

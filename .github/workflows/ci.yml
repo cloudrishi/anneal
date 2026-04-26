@@ -71,3 +71,15 @@ jobs:
 
       - name: Build
         run: ./gradlew build -x test
+
+      - name: Generate llms-full.txt
+        run: |
+          tail -n +2 README.md > llms-full.txt
+          echo "" >> llms-full.txt
+          cat ARCHITECTURE.md >> llms-full.txt
+
+      - name: Upload llms-full.txt
+        uses: actions/upload-artifact@v4
+        with:
+          name: llms-full
+          path: llms-full.txt
