@@ -62,6 +62,29 @@ public class ScanResultRepository {
         return FindingEntity.findByScanId(scanId);
     }
 
+    /**
+     * Updates the status of a single finding by its findingId.
+     *
+     * <p>Returns {@code true} if the finding was found and updated,
+     * {@code false} if no finding with the given findingId exists.
+     * The scanId is used as an additional guard — a findingId that exists
+     * but belongs to a different scan returns {@code false}.
+     *
+     * @param scanId    the scan that owns this finding — prevents cross-scan updates
+     * @param findingId the finding to update
+     * @param status    the new status string e.g. "ACCEPTED", "REJECTED", "DEFERRED"
+     * @return true if the row was updated, false if not found
+     */
+    @Transactional
+    public boolean updateFindingStatus(String scanId, String findingId, String status) {
+        long updated = FindingEntity.update(
+                "status = ?1 WHERE findingId = ?2 AND scanResult.scanId = ?3",
+                status, findingId, scanId
+        );
+        return updated > 0;
+    }
+
+
     private ScanResultEntity toEntity(ScanResult result) {
         RiskScoreCalculator.RiskBand band = riskScoreCalculator.band(result.getRiskScore());
 

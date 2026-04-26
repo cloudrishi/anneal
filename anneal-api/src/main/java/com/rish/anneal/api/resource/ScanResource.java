@@ -3,6 +3,7 @@ package com.rish.anneal.api.resource;
 import com.rish.anneal.api.dto.FindingDto;
 import com.rish.anneal.api.dto.ScanRequest;
 import com.rish.anneal.api.dto.ScanResponse;
+import com.rish.anneal.api.dto.StatusUpdateRequest;
 import com.rish.anneal.api.mapper.ScanMapper;
 import com.rish.anneal.api.registry.RuleRegistry;
 import com.rish.anneal.core.engine.RiskScoreCalculator;
@@ -217,6 +218,40 @@ public class ScanResource {
                         .entity("{\"error\":\"Scan not found: " + scanId + "\"}")
                         .build());
     }
+
+    /**
+     * Updates the status of a finding within a scan.
+     *
+     * <p>Permitted transitions: OPEN → ACCEPTED, OPEN → REJECTED, OPEN → DEFERRED.
+     * The endpoint is idempotent — patching an already-accepted finding to ACCEPTED
+     * is a no-op that returns 200.
+     *
+     * <p>Returns 404 if the scanId or findingId does not exist, or if the finding
+     * does not belong to the given scan.
+     */
+    @PATCH
+    @Path("/scans/{scanId}/findings/{findingId}")
+    @Operation(
+            summary = "Update finding status",
+            description = "Accepts, rejects, or defers a finding. Status is persisted immediately."
+    )
+    public Response updateFindingStatus(
+            @PathParam("scanId") String scanId,
+            @PathParam("findingId") String findingId,
+            @Valid StatusUpdateRequest request
+    ) {
+        boolean updated = repository.updateFindingStatus(scanId, findingId, request.status());
+
+        if (!updated) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity("{\"error\":\"Finding not found: " + findingId + " in scan: " + scanId + "\"}")
+                    .build();
+        }
+
+        log.infof("Finding %s status updated to %s in scan %s", findingId, request.status(), scanId);
+        return Response.ok("{\"findingId\":\"" + findingId + "\",\"status\":\"" + request.status() + "\"}").build();
+    }
+
 
     private JavaVersion resolveSourceVersion(ScanRequest request,
                                              java.nio.file.Path repoPath) {

@@ -1,7 +1,7 @@
 # anneal — Architecture & Design Record
 
 > Living document. Updated at every design decision.  
-> Last updated: April 24, 2026
+> Last updated: April 26, 2026
 
 ---
 
@@ -444,6 +444,11 @@ GET /api/scans/{scanId}
   -> ScanResultRepository.findingsByScanId()
   -> ScanMapper.fromEntity()   — llmExplanation/llmProvider/llmModel = null, not re-enriched
   -> 200 OK with ScanResponse | 404 if not found
+
+PATCH /api/scans/{scanId}/findings/{findingId}
+  -> validate status — ACCEPTED | REJECTED | DEFERRED (400 on invalid)
+  -> ScanResultRepository.updateFindingStatus(scanId, findingId, status)
+  -> 200 OK with {findingId, status} | 404 if not found
 ```
 
 ### configuration
@@ -692,34 +697,39 @@ Always use `./gradlew` — never the global `gradle` command.
 | Method | Path                  | Description                                                     |
 |--------|-----------------------|-----------------------------------------------------------------|
 | GET    | `/api/health`         | Liveness check                                                  |
-| POST   | `/api/scan`           | Scan a Java repository — returns findings with LLM explanations |
-| GET    | `/api/scans`          | List all past scans, most recent first                          |
-| GET    | `/api/scans/{scanId}` | Get specific scan with all findings                             |
+| POST   | `/api/scan`                                      | Scan a Java repository — returns findings with LLM explanations    |
+| GET    | `/api/scans`                                     | List all past scans, most recent first                             |
+| GET    | `/api/scans/{scanId}`                            | Get specific scan with all findings                                |
+| PATCH  | `/api/scans/{scanId}/findings/{findingId}`       | Update finding status — ACCEPTED · REJECTED · DEFERRED             |
 
 ### classes
 
 | Class                    | Package                   | Responsibility                                                            |
 |--------------------------|---------------------------|---------------------------------------------------------------------------|
-| `ScanResource`           | `anneal-api/resource`     | 4 endpoints — scan flow includes LLM enrichment + embedding orchestration |
+| `ScanResource`           | `anneal-api/resource`     | 5 endpoints — scan flow + finding status PATCH                            |
 | `ScanRequest`            | `anneal-api/dto`          | Request record — `repoPath` + optional `sourceVersion`                    |
+| `StatusUpdateRequest`    | `anneal-api/dto`          | PATCH body — `status` with @Pattern validation                            |
 | `ScanResponse`           | `anneal-api/dto`          | Response — findings, risk score, boundary scores                          |
 | `ScanSummaryDto`         | `anneal-api/dto`          | Lightweight list view — no findings                                       |
-| `FindingDto`             | `anneal-api/dto`          | Individual finding — `referenceUrl` + `llmExplanation`                    |
-| `ScanMapper`             | `anneal-api/mapper`       | Stateless. Overloaded `toFindingDto(finding, explanation)` for LLM wiring |
+| `FindingDto`             | `anneal-api/dto`          | 20 fields — `llmExplanation` + `llmProvider` + `llmModel`                 |
+| `LlmProvider`            | `anneal-api/model`        | Enum — OLLAMA, ANTHROPIC                                                  |
+| `ScanMapper`             | `anneal-api/mapper`       | Stateless — pattern-matches `LlmModel` to populate provider + model name  |
 | `ScanResultEntity`       | `anneal-store/entity`     | `anneal.scan_results` table                                               |
-| `FindingEntity`          | `anneal-store/entity`     | `anneal.findings` table — includes `reference_url`                        |
+| `FindingEntity`          | `anneal-store/entity`     | `anneal.findings` table — includes `reference_url`, `status`              |
 | `FindingEmbeddingEntity` | `anneal-store/entity`     | `anneal.finding_embeddings` — `vector(384)`                               |
-| `ScanResultRepository`   | `anneal-store/repository` | Persist and retrieve scans and findings                                   |
+| `ScanResultRepository`   | `anneal-store/repository` | Persist and retrieve scans, findings, status updates                      |
 | `EmbeddingRepository`    | `anneal-store/repository` | Persist and cosine-search finding embeddings                              |
 
 ### design decisions
 
 - All DTOs are Java 25 records — no Lombok, no boilerplate
 - `@NotBlank` on `ScanRequest.repoPath` — Quarkus returns 400 automatically
+- `@Pattern` on `StatusUpdateRequest.status` — rejects invalid status values at the API boundary
 - Findings sorted by severity then confidence descending — most critical first
 - `referenceUrl` denormalized onto `Finding` at detection time — mapper stays stateless
 - `llmExplanation` injected at response build time — not persisted
 - History view returns `llmExplanation: null` — not re-enriched on retrieval
+- PATCH uses `findingId + scanId` guard — prevents cross-scan status updates
 - `beans.xml` required in `anneal-store` and `anneal-llm` META-INF for CDI bean discovery
 - Sequences in `public` schema — Hibernate resolves without schema prefix
 
@@ -885,7 +895,7 @@ Two jobs — `test` then `build`.
 | Rule engine                 | ✅ Complete — 22 rules, 6 categories, 8->25 coverage, ANNOTATION pattern active |
 | Risk calculator             | ✅ Complete — weighted formula, per-boundary breakdown                          |
 | Scanner                     | ✅ Complete — AST, build file, version detection                                |
-| REST API                    | ✅ Complete — 4 endpoints, persistence, validation                              |
+| REST API                    | ✅ Complete — 5 endpoints, persistence, validation                              |
 | Persistence                 | ✅ Complete — Panache entities, Flyway V1-V5, pgvector tables                   |
 | Frontend                    | ✅ Complete — brutalist UI, scan panel, risk score, finding cards               |
 | Tests                       | ✅ Complete — 38 tests, all passing locally and in CI                           |
@@ -897,8 +907,8 @@ Two jobs — `test` then `build`.
 | Prompt version anchoring    | ✅ Complete — version facts injected as hard constraints, hallucination fixed   |
 | Cloud validation harness    | ✅ Complete — CloudModelValidationIT opt-in, gated by ANTHROPIC_API_KEY         |
 | llms.txt                    | ✅ Complete — checked in at repo root                                           |
+| Finding status PATCH        | ✅ Complete — PATCH endpoint, wait-for-confirmation UI, error display           |
 | History view                | 🔲 Pending — list past scans in UI                                             |
-| Finding status PATCH        | 🔲 Pending — accept/reject/defer persistence                                   |
 | README                      | 🔲 Pending                                                                     |
 
 ---
@@ -942,12 +952,17 @@ Two jobs — `test` then `build`.
 | 2026-04-24 | `enrichAll()` takes `Map<ruleId, MigrationRule>`     | Rule required to inject introducedIn/removedIn into prompt  |
 | 2026-04-24 | `CloudModelValidationIT` gated by env var            | Opt-in QA harness — not a CI gate                           |
 | 2026-04-24 | `llms.txt` checked in, `llms-full.txt` gitignored    | Curated vs generated — different ownership models           |
+| 2026-04-26 | Wait-for-confirmation over optimistic update         | Decision tool — status flip must be confirmed, not assumed  |
+| 2026-04-26 | PATCH guard: findingId + scanId                      | Prevents cross-scan status updates                          |
+| 2026-04-26 | `@Pattern` validation on StatusUpdateRequest         | Invalid status rejected at API boundary with 400            |
+| 2026-04-26 | Loading state on clicked button only                 | Other buttons disabled during flight — prevents double-action|
+| 2026-04-26 | Error displayed inline, buttons stay active          | Developer retries without losing context                    |
+| 2026-04-26 | PATCH added to CORS allowed methods                  | Frontend on :3000 blocked without it                        |
 
 ---
 
 ## open questions
 
-- Finding status PATCH endpoint — accept/reject/defer persistence
-- History view — surface past scans in frontend
-- Cloud model validation output — run `CloudModelValidationIT` and evaluate prose quality delta between codellama and claude-sonnet-4-6 on the test-legacy fixture
+- History view — list past scans in UI with persisted status
+- Cloud model validation output — run `CloudModelValidationIT` and evaluate prose quality delta
 - README

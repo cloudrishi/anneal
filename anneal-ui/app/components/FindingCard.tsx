@@ -28,231 +28,248 @@ interface FindingDto {
 }
 
 interface FindingCardProps {
+    scanId: string;                                    // needed for PATCH path
     finding: FindingDto;
     onAccept: (findingId: string) => void;
     onReject: (findingId: string) => void;
-    onDefer: (findingId: string) => void;
+    onDefer:  (findingId: string) => void;
 }
 
-// ─── Design tokens — matches anneal design system exactly ────────────────────
+// ─── Design tokens ────────────────────────────────────────────────────────────
 
 const SEVERITY_COLOR: Record<Severity, string> = {
-    BREAKING: 'var(--breaking)',   // #e53e3e
-    DEPRECATED: 'var(--warning)',    // #f0b429
-    MODERNIZATION: 'var(--success)',    // #4caf7d
+    BREAKING:      'var(--breaking)',
+    DEPRECATED:    'var(--warning)',
+    MODERNIZATION: 'var(--success)',
 };
 
 const EFFORT_LABEL: Record<Effort, string> = {
     TRIVIAL: 'trivial',
-    LOW: 'low',
-    MEDIUM: 'medium',
-    HIGH: 'high',
-    MANUAL: 'manual',
+    LOW:     'low',
+    MEDIUM:  'medium',
+    HIGH:    'high',
+    MANUAL:  'manual',
 };
 
 const STATUS_STYLES: Record<FindingStatus, { border: string; label: string }> = {
-    OPEN: {border: 'var(--border)', label: ''},
-    ACCEPTED: {border: 'var(--success)', label: '✓ accepted'},
-    REJECTED: {border: 'var(--breaking)', label: '✗ rejected'},
-    DEFERRED: {border: 'var(--warning)', label: '~ deferred'},
+    OPEN:     { border: 'var(--border)',   label: ''           },
+    ACCEPTED: { border: 'var(--success)',  label: '✓ accepted' },
+    REJECTED: { border: 'var(--breaking)', label: '✗ rejected' },
+    DEFERRED: { border: 'var(--warning)',  label: '~ deferred' },
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function FindingCard({finding, onAccept, onReject, onDefer}: FindingCardProps) {
-    const [expanded, setExpanded] = useState(false);
-    const [status, setStatus] = useState<FindingStatus>(finding.status);
+export default function FindingCard({ scanId, finding, onAccept, onReject, onDefer }: FindingCardProps) {
+    const [expanded,  setExpanded ] = useState(false);
+    const [status,    setStatus   ] = useState<FindingStatus>(finding.status);
+    const [loading,   setLoading  ] = useState<FindingStatus | null>(null); // which button is in flight
+    const [error,     setError    ] = useState<string | null>(null);
 
     const severityColor = SEVERITY_COLOR[finding.severity];
-    const statusStyle = STATUS_STYLES[status];
-    const isActioned = status !== 'OPEN';
+    const statusStyle   = STATUS_STYLES[status];
+    const isActioned    = status !== 'OPEN';
 
-    function handleAccept() {
-        setStatus('ACCEPTED');
-        onAccept(finding.findingId);
-    }
+    async function updateStatus(newStatus: FindingStatus) {
+        setLoading(newStatus);
+        setError(null);
 
-    function handleReject() {
-        setStatus('REJECTED');
-        onReject(finding.findingId);
-    }
+        try {
+            const res = await fetch(
+                `http://localhost:8080/api/scans/${scanId}/findings/${finding.findingId}`,
+                {
+                    method:  'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify({ status: newStatus }),
+                }
+            );
 
-    function handleDefer() {
-        setStatus('DEFERRED');
-        onDefer(finding.findingId);
+            if (!res.ok) {
+                const body = await res.text();
+                throw new Error(body || `HTTP ${res.status}`);
+            }
+
+            // Confirmed — update local state and notify parent
+            setStatus(newStatus);
+            if (newStatus === 'ACCEPTED') onAccept(finding.findingId);
+            if (newStatus === 'REJECTED') onReject(finding.findingId);
+            if (newStatus === 'DEFERRED') onDefer(finding.findingId);
+
+        } catch (e: unknown) {
+            const message = e instanceof Error ? e.message : 'unknown error';
+            setError(`Failed to update status: ${message}`);
+        } finally {
+            setLoading(null);
+        }
     }
 
     return (
         <div style={{
-            background: 'var(--surface)',
-            border: `1px solid ${statusStyle.border}`,
-            borderLeft: `3px solid ${severityColor}`,
+            background:   'var(--surface)',
+            border:       `1px solid ${statusStyle.border}`,
+            borderLeft:   `3px solid ${severityColor}`,
             marginBottom: '8px',
-            opacity: isActioned ? 0.7 : 1,
-            transition: 'opacity 0.15s ease, border-color 0.15s ease',
+            opacity:      isActioned ? 0.7 : 1,
+            transition:   'opacity 0.15s ease, border-color 0.15s ease',
         }}>
 
             {/* ── Header ── */}
             <button
                 onClick={() => setExpanded(e => !e)}
                 style={{
-                    width: '100%',
-                    display: 'flex',
+                    width:      '100%',
+                    display:    'flex',
                     alignItems: 'center',
-                    gap: '12px',
-                    padding: '10px 14px',
+                    gap:        '12px',
+                    padding:    '10px 14px',
                     background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    color: 'var(--foreground)',
+                    border:     'none',
+                    cursor:     'pointer',
+                    textAlign:  'left',
+                    color:      'var(--foreground)',
                     fontFamily: 'var(--font-mono)',
                 }}
             >
                 {/* Severity badge */}
                 <span style={{
-                    fontSize: '9px',
-                    fontWeight: 700,
+                    fontSize:      '9px',
+                    fontWeight:    700,
                     letterSpacing: '0.1em',
                     textTransform: 'uppercase',
-                    color: severityColor,
-                    border: `1px solid ${severityColor}`,
-                    padding: '2px 5px',
-                    flexShrink: 0,
+                    color:         severityColor,
+                    border:        `1px solid ${severityColor}`,
+                    padding:       '2px 5px',
+                    flexShrink:    0,
                 }}>
-          {finding.severity}
-        </span>
+                    {finding.severity}
+                </span>
 
                 {/* Rule ID */}
                 <span style={{
-                    fontSize: '12px',
-                    color: 'var(--foreground)',
-                    flexGrow: 1,
-                    overflow: 'hidden',
+                    fontSize:     '12px',
+                    color:        'var(--foreground)',
+                    flexGrow:     1,
+                    overflow:     'hidden',
                     textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
+                    whiteSpace:   'nowrap',
                 }}>
-          {finding.ruleId}
-        </span>
+                    {finding.ruleId}
+                </span>
 
                 {/* File + line */}
                 <span style={{
-                    fontSize: '11px',
-                    color: 'var(--foreground)',
-                    opacity: 0.45,
-                    flexShrink: 0,
-                    maxWidth: '220px',
-                    overflow: 'hidden',
+                    fontSize:     '11px',
+                    color:        'var(--foreground)',
+                    opacity:      0.45,
+                    flexShrink:   0,
+                    maxWidth:     '220px',
+                    overflow:     'hidden',
                     textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
+                    whiteSpace:   'nowrap',
                 }}>
-          {shortPath(finding.filePath)}:{finding.lineNumber}
-        </span>
+                    {shortPath(finding.filePath)}:{finding.lineNumber}
+                </span>
 
-                {/* Status label (shown when actioned) */}
+                {/* Status label */}
                 {isActioned && (
                     <span style={{
-                        fontSize: '10px',
-                        color: statusStyle.border,
+                        fontSize:      '10px',
+                        color:         statusStyle.border,
                         letterSpacing: '0.05em',
-                        flexShrink: 0,
+                        flexShrink:    0,
                     }}>
-            {statusStyle.label}
-          </span>
+                        {statusStyle.label}
+                    </span>
                 )}
 
                 {/* Chevron */}
                 <span style={{
-                    fontSize: '10px',
-                    color: 'var(--foreground)',
-                    opacity: 0.4,
+                    fontSize:   '10px',
+                    color:      'var(--foreground)',
+                    opacity:    0.4,
                     flexShrink: 0,
-                    transform: expanded ? 'rotate(90deg)' : 'none',
+                    transform:  expanded ? 'rotate(90deg)' : 'none',
                     transition: 'transform 0.12s ease',
                 }}>
-          ▶
-        </span>
+                    ▶
+                </span>
             </button>
 
             {/* ── Expanded body ── */}
             {expanded && (
-                <div style={{padding: '0 14px 14px'}}>
+                <div style={{ padding: '0 14px 14px' }}>
 
                     {/* Confidence + effort row */}
                     <div style={{
-                        display: 'flex',
-                        gap: '16px',
-                        marginBottom: '12px',
-                        fontSize: '10px',
-                        color: 'var(--foreground)',
-                        opacity: 0.5,
-                        fontFamily: 'var(--font-mono)',
+                        display:       'flex',
+                        gap:           '16px',
+                        marginBottom:  '12px',
+                        fontSize:      '10px',
+                        color:         'var(--foreground)',
+                        opacity:       0.5,
+                        fontFamily:    'var(--font-mono)',
                         letterSpacing: '0.05em',
                     }}>
                         <span>confidence {pct(finding.confidence)}</span>
                         {finding.autoApplicable && (
-                            <span style={{color: 'var(--success)', opacity: 1}}>auto-applicable</span>
+                            <span style={{ color: 'var(--success)', opacity: 1 }}>auto-applicable</span>
                         )}
                     </div>
 
                     {/* Original code */}
                     <Section label="detected">
-                        <CodeBlock code={finding.originalCode} dimmed/>
+                        <CodeBlock code={finding.originalCode} dimmed />
                     </Section>
 
                     {/* Suggested fix */}
                     <Section label="suggested fix">
-                        <CodeBlock code={finding.suggestedCode}/>
+                        <CodeBlock code={finding.suggestedCode} />
                     </Section>
 
-                    {/* LLM explanation — only when present */}
+                    {/* LLM explanation */}
                     {finding.llmExplanation && (
                         <div style={{
                             marginBottom: '12px',
-                            padding: '10px 12px',
-                            background: 'var(--bg)',
-                            border: '1px solid var(--border)',
-                            borderLeft: '3px solid var(--accent)',   // molten orange left rail
+                            padding:      '10px 12px',
+                            background:   'var(--bg)',
+                            border:       '1px solid var(--border)',
+                            borderLeft:   '3px solid var(--accent)',
                         }}>
-                            {/* Header row: label + model attribution */}
                             <div style={{
-                                display: 'flex',
-                                alignItems: 'center',
+                                display:        'flex',
+                                alignItems:     'center',
                                 justifyContent: 'space-between',
-                                marginBottom: '6px',
+                                marginBottom:   '6px',
                             }}>
-                <span style={{
-                    fontSize: '9px',
-                    fontFamily: 'var(--font-mono)',
-                    color: 'var(--accent)',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.1em',
-                    fontWeight: 700,
-                }}>
-                  AI explanation
-                </span>
-
-                                {/* Model attribution — only when modelUsed is populated */}
+                                <span style={{
+                                    fontSize:      '9px',
+                                    fontFamily:    'var(--font-mono)',
+                                    color:         'var(--accent)',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.1em',
+                                    fontWeight:    700,
+                                }}>
+                                    AI explanation
+                                </span>
                                 {finding.llmModel && (
                                     <span style={{
-                                        fontSize: '9px',
-                                        fontFamily: 'var(--font-mono)',
-                                        color: 'var(--foreground)',
-                                        opacity: 0.35,
+                                        fontSize:      '9px',
+                                        fontFamily:    'var(--font-mono)',
+                                        color:         'var(--foreground)',
+                                        opacity:       0.35,
                                         letterSpacing: '0.04em',
                                     }}>
-                    via {finding.llmModel}
-                  </span>
+                                        via {finding.llmModel}
+                                    </span>
                                 )}
                             </div>
-
                             <p style={{
-                                margin: 0,
-                                fontSize: '12px',
+                                margin:     0,
+                                fontSize:   '12px',
                                 fontFamily: 'var(--font-mono)',
-                                color: 'var(--foreground)',
+                                color:      'var(--foreground)',
                                 lineHeight: '1.65',
-                                opacity: 0.85,
+                                opacity:    0.85,
                             }}>
                                 {finding.llmExplanation}
                             </p>
@@ -261,18 +278,18 @@ export default function FindingCard({finding, onAccept, onReject, onDefer}: Find
 
                     {/* Reference link */}
                     {finding.referenceUrl && (
-                        <div style={{marginBottom: '12px'}}>
+                        <div style={{ marginBottom: '12px' }}>
                             <a
                                 href={finding.referenceUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 style={{
-                                    fontSize: '10px',
-                                    fontFamily: 'var(--font-mono)',
-                                    color: 'var(--accent)',
-                                    opacity: 0.7,
+                                    fontSize:       '10px',
+                                    fontFamily:     'var(--font-mono)',
+                                    color:          'var(--accent)',
+                                    opacity:        0.7,
                                     textDecoration: 'none',
-                                    letterSpacing: '0.04em',
+                                    letterSpacing:  '0.04em',
                                 }}
                             >
                                 ↗ reference
@@ -280,12 +297,45 @@ export default function FindingCard({finding, onAccept, onReject, onDefer}: Find
                         </div>
                     )}
 
-                    {/* Accept / Reject / Defer — hidden when already actioned */}
+                    {/* Error message */}
+                    {error && (
+                        <div style={{
+                            marginBottom:  '10px',
+                            padding:       '6px 10px',
+                            border:        '1px solid var(--breaking)',
+                            fontSize:      '10px',
+                            fontFamily:    'var(--font-mono)',
+                            color:         'var(--breaking)',
+                            letterSpacing: '0.03em',
+                        }}>
+                            {error}
+                        </div>
+                    )}
+
+                    {/* Accept / Reject / Defer */}
                     {!isActioned && (
-                        <div style={{display: 'flex', gap: '6px'}}>
-                            <ActionButton label="accept" color="var(--success)" onClick={handleAccept}/>
-                            <ActionButton label="reject" color="var(--breaking)" onClick={handleReject}/>
-                            <ActionButton label="defer" color="var(--warning)" onClick={handleDefer}/>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                            <ActionButton
+                                label="accept"
+                                color="var(--success)"
+                                loading={loading === 'ACCEPTED'}
+                                disabled={loading !== null}
+                                onClick={() => updateStatus('ACCEPTED')}
+                            />
+                            <ActionButton
+                                label="reject"
+                                color="var(--breaking)"
+                                loading={loading === 'REJECTED'}
+                                disabled={loading !== null}
+                                onClick={() => updateStatus('REJECTED')}
+                            />
+                            <ActionButton
+                                label="defer"
+                                color="var(--warning)"
+                                loading={loading === 'DEFERRED'}
+                                disabled={loading !== null}
+                                onClick={() => updateStatus('DEFERRED')}
+                            />
                         </div>
                     )}
 
@@ -297,17 +347,17 @@ export default function FindingCard({finding, onAccept, onReject, onDefer}: Find
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function Section({label, children}: { label: string; children: React.ReactNode }) {
+function Section({ label, children }: { label: string; children: React.ReactNode }) {
     return (
-        <div style={{marginBottom: '12px'}}>
+        <div style={{ marginBottom: '12px' }}>
             <div style={{
-                fontSize: '9px',
-                fontFamily: 'var(--font-mono)',
-                color: 'var(--foreground)',
-                opacity: 0.4,
+                fontSize:      '9px',
+                fontFamily:    'var(--font-mono)',
+                color:         'var(--foreground)',
+                opacity:       0.4,
                 textTransform: 'uppercase',
                 letterSpacing: '0.1em',
-                marginBottom: '4px',
+                marginBottom:  '4px',
             }}>
                 {label}
             </div>
@@ -316,73 +366,80 @@ function Section({label, children}: { label: string; children: React.ReactNode }
     );
 }
 
-function CodeBlock({code, dimmed = false}: { code: string; dimmed?: boolean }) {
+function CodeBlock({ code, dimmed = false }: { code: string; dimmed?: boolean }) {
     return (
         <pre style={{
-            margin: 0,
-            padding: '8px 10px',
+            margin:     0,
+            padding:    '8px 10px',
             background: 'var(--bg)',
-            border: '1px solid var(--border)',
-            fontSize: '11px',
+            border:     '1px solid var(--border)',
+            fontSize:   '11px',
             fontFamily: 'var(--font-mono)',
-            color: 'var(--foreground)',
-            opacity: dimmed ? 0.55 : 0.9,
-            overflowX: 'auto',
+            color:      'var(--foreground)',
+            opacity:    dimmed ? 0.55 : 0.9,
+            overflowX:  'auto',
             lineHeight: '1.5',
             whiteSpace: 'pre-wrap',
-            wordBreak: 'break-word',
+            wordBreak:  'break-word',
         }}>
-      {code}
-    </pre>
+            {code}
+        </pre>
     );
 }
 
 function ActionButton({
-                          label,
-                          color,
-                          onClick,
-                      }: {
-    label: string;
-    color: string;
-    onClick: () => void;
+    label,
+    color,
+    loading,
+    disabled,
+    onClick,
+}: {
+    label:    string;
+    color:    string;
+    loading:  boolean;
+    disabled: boolean;
+    onClick:  () => void;
 }) {
     return (
         <button
             onClick={onClick}
+            disabled={disabled}
             style={{
-                padding: '5px 12px',
-                background: 'none',
-                border: `1px solid ${color}`,
-                color: color,
-                fontFamily: 'var(--font-mono)',
-                fontSize: '10px',
+                padding:       '5px 12px',
+                background:    loading ? color : 'none',
+                border:        `1px solid ${color}`,
+                color:         loading ? 'var(--bg)' : color,
+                fontFamily:    'var(--font-mono)',
+                fontSize:      '10px',
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',
-                cursor: 'pointer',
+                cursor:        disabled ? 'not-allowed' : 'pointer',
+                opacity:       disabled && !loading ? 0.4 : 1,
+                transition:    'opacity 0.1s ease',
             }}
             onMouseEnter={e => {
+                if (disabled) return;
                 (e.target as HTMLButtonElement).style.background = color;
-                (e.target as HTMLButtonElement).style.color = 'var(--bg)';
+                (e.target as HTMLButtonElement).style.color      = 'var(--bg)';
             }}
             onMouseLeave={e => {
+                if (loading) return;
                 (e.target as HTMLButtonElement).style.background = 'none';
-                (e.target as HTMLButtonElement).style.color = color;
+                (e.target as HTMLButtonElement).style.color      = color;
             }}
         >
-            {label}
+            {loading ? '…' : label}
         </button>
     );
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Trims the file path to the last two segments for compact display. */
 function shortPath(path: string): string {
     const parts = path.replace(/\\/g, '/').split('/');
     return parts.length > 2 ? '…/' + parts.slice(-2).join('/') : path;
 }
 
-/** Formats confidence as a percentage string. */
 function pct(n: number): string {
     return Math.round(n * 100) + '%';
 }

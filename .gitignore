@@ -22,3 +22,4 @@ out/
 *.lock
 *.probe
 *.dat
+llms-full.txt

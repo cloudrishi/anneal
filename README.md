@@ -14,7 +14,12 @@ Java codebase.
 anneal scans a Java repository, detects version-specific risks and breaking changes across the 8→11→17→21→25 LTS path,
 and returns a structured migration report with per-finding LLM explanations grounded in your actual source code.
 
-It is a **co-pilot, not an autopilot**. It surfaces, explains, and suggests. The developer decides.
+It is a **co-pilot, not an autopilot**. It surfaces, explains, and suggests. The developer decides — and records that decision:
+
+```
+PATCH /api/scans/{scanId}/findings/{findingId}
+{"status": "ACCEPTED"}
+```
 
 ```
 POST /api/scan
@@ -250,12 +255,13 @@ local and cloud models side-by-side for manual review.
 
 ## endpoints
 
-| Method | Path                  | Description                       |
-|--------|-----------------------|-----------------------------------|
-| `GET`  | `/api/health`         | Liveness check                    |
-| `POST` | `/api/scan`           | Scan a repository                 |
-| `GET`  | `/api/scans`          | List all past scans               |
-| `GET`  | `/api/scans/{scanId}` | Get a specific scan with findings |
+| Method  | Path                                             | Description                       |
+|---------|--------------------------------------------------|-----------------------------------|
+| `GET`   | `/api/health`                                    | Liveness check                    |
+| `POST`  | `/api/scan`                                      | Scan a repository                 |
+| `GET`   | `/api/scans`                                     | List all past scans               |
+| `GET`   | `/api/scans/{scanId}`                            | Get a specific scan with findings |
+| `PATCH` | `/api/scans/{scanId}/findings/{findingId}`       | Update finding status             |
 
 OpenAPI docs available at `http://localhost:8080/q/swagger-ui` in dev mode.
 

@@ -78,7 +78,14 @@ export default function Home() {
             </div>
           ) : (
             filteredFindings.map((finding: any) => (
-              <FindingCard key={finding.findingId} finding={finding} />
+              <FindingCard
+                  key={finding.findingId}
+                  scanId={scanResult.scanId}
+                  finding={finding}
+                  onAccept={(id) => console.log('accepted', id)}
+                  onReject={(id) => console.log('rejected', id)}
+                  onDefer={(id) => console.log('deferred', id)}
+              />
             ))
           )}
         </>
