@@ -856,6 +856,10 @@ with `codebase-chat` and `master-data-ui` — deliberate portfolio signature.
 | 2026-04-24 | `llmProvider` + `llmModel` in FindingDto      | Provider is enum (closed set); model name is String (config-driven)       |
 | 2026-04-24 | "via {model}" attribution in FindingCard      | Transparency — developer sees which model produced the explanation        |
 | 2026-04-24 | No attribution label when llmModel is null    | History retrieval returns null — no apology text, just silence            |
+| 2026-04-27 | History view as tab, not separate page        | Single-page brutalist aesthetic — tab switcher fits the design language   |
+| 2026-04-27 | Clicking history row loads scan + switches tab| Developer sees full findings immediately without losing scan context      |
+| 2026-04-27 | Left rail color matches risk band             | Same visual language as risk score — green/yellow/red at a glance        |
+| 2026-04-27 | shortPath truncates to last 3 segments        | Repo paths are long — 3 segments shows enough context without overflow    |
 
 ---
 
@@ -918,7 +922,7 @@ Two jobs — `test` then `build`.
 | Async LLM enrichment        | ✅ Complete — enrichAllAsync, Consumer callback, progressive UI fill-in         |
 | LLM columns persisted       | ✅ Complete — V5 migration, updateFindingEnrichment, history shows explanations |
 | Parallel enrichment         | ✅ Complete — CompletableFuture, configurable concurrency, per-finding timeout  |
-| History view                | 🔲 Pending — list past scans in UI                                             |
+| History view                | ✅ Complete — scan/history tab switcher, past scan list, load into scan tab     |
 | README                      | 🔲 Pending                                                                     |
 
 ---
@@ -981,6 +985,5 @@ Two jobs — `test` then `build`.
 
 ## open questions
 
-- History view — list past scans in UI with persisted status and explanations
-- Cloud model validation output — run `CloudModelValidationIT` and evaluate prose quality delta
+- Cloud model validation output — run `CloudModelValidationIT` and evaluate prose quality delta between codellama and claude-sonnet-4-6
 - README

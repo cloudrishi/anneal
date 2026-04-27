@@ -189,6 +189,8 @@ npm run dev
 
 Open `http://localhost:3000`.
 
+The UI has two tabs — **scan** to run new scans, **history** to browse past scans. Clicking any past scan loads the full result with findings and persisted LLM explanations.
+
 ### 5. scan a project
 
 ```bash
