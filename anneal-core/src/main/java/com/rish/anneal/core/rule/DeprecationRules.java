@@ -25,7 +25,7 @@ public class DeprecationRules {
                 .name("SecurityManager deprecated for removal")
                 .category(RuleCategory.DEPRECATION)
                 .severity(Severity.DEPRECATED)
-                .effort(Effort.HIGH)
+                .effort(Effort.MANUAL)
                 .introducedIn(JavaVersion.V17)
                 .patterns(List.of(
                         DetectionPattern.builder()

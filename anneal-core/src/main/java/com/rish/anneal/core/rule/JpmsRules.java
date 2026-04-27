@@ -63,7 +63,7 @@ public class JpmsRules {
                 .name("sun.misc.Unsafe usage")
                 .category(RuleCategory.JPMS)
                 .severity(Severity.BREAKING)
-                .effort(Effort.HIGH)
+                .effort(Effort.MANUAL)
                 .introducedIn(JavaVersion.V9)
                 .patterns(List.of(
                         DetectionPattern.builder()

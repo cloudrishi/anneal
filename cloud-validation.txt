@@ -1,0 +1,480 @@
+Initialized native services in: /Users/rish/.gradle/native
+Initialized jansi services in: /Users/rish/.gradle/native
+Removing 0 daemon stop events from registry
+Previous Daemon (35374) stopped at Mon Apr 27 11:55:37 CDT 2026 stop command received
+Previous Daemon (29853) stopped at Mon Apr 27 11:43:50 CDT 2026 other compatible daemons were started and after being idle for 0 minutes and not recently used
+Starting a Gradle Daemon, 2 stopped Daemons could not be reused, use --status for details
+Starting process 'Gradle build daemon'. Working directory: /Users/rish/.gradle/daemon/9.4.1 Command: /Users/rish/.sdkman/candidates/java/25.0.2-tem/bin/java --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.invoke=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.prefs/java.util.prefs=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.prefs/java.util.prefs=ALL-UNNAMED --add-opens=java.base/java.nio.charset=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.xml/javax.xml.namespace=ALL-UNNAMED --add-opens=java.base/java.time=ALL-UNNAMED --enable-native-access=ALL-UNNAMED -XX:MaxMetaspaceSize=384m -XX:+HeapDumpOnOutOfMemoryError -Xms256m -Xmx512m -Dfile.encoding=UTF-8 -Duser.country=US -Duser.language=en -Duser.variant -cp /Users/rish/.gradle/wrapper/dists/gradle-9.4.1-bin/arn2x92ynaizyzdaamcbpbhtj/gradle-9.4.1/lib/gradle-daemon-main-9.4.1.jar -javaagent:/Users/rish/.gradle/wrapper/dists/gradle-9.4.1-bin/arn2x92ynaizyzdaamcbpbhtj/gradle-9.4.1/lib/agents/gradle-instrumentation-agent-9.4.1.jar org.gradle.launcher.daemon.bootstrap.GradleDaemon 9.4.1
+Successfully started process 'Gradle build daemon'
+An attempt to start the daemon took 0.573 secs.
+The client will now receive all logging from the daemon (pid: 44825). The daemon log file: /Users/rish/.gradle/daemon/9.4.1/daemon-44825.out.log
+Starting build in new daemon [memory: 512 MiB]
+Using 8 worker leases.
+Operational build model parameters: {cachingModelBuilding=false, configurationCache=false, configurationCacheDisabledReason=null, configurationCacheParallelLoad=false, configurationCacheParallelStore=false, configureOnDemand=false, invalidateCoupledProjects=false, isolatedProjects=false, modelAsProjectDependency=false, modelBuilding=false, parallelModelBuilding=false, parallelProjectConfiguration=false, parallelProjectExecution=false, resilientModelBuilding=false}
+Received JVM installation metadata from '/Users/rish/.sdkman/candidates/java/25.0.2-tem': {JAVA_HOME=/Users/rish/.sdkman/candidates/java/25.0.2-tem, JAVA_VERSION=25.0.2, JAVA_VENDOR=Eclipse Adoptium, RUNTIME_NAME=OpenJDK Runtime Environment, RUNTIME_VERSION=25.0.2+10-LTS, VM_NAME=OpenJDK 64-Bit Server VM, VM_VERSION=25.0.2+10-LTS, VM_VENDOR=Eclipse Adoptium, OS_ARCH=aarch64}
+Watching the file system is configured to be enabled if available
+Now considering [/Users/rish/working/p2-projects/anneal] as hierarchies to watch
+File system watching is active
+Starting Build
+Settings evaluated using settings file '/Users/rish/working/p2-projects/anneal/settings.gradle.kts'.
+Projects loaded. Root project using build file '/Users/rish/working/p2-projects/anneal/build.gradle.kts'.
+Included projects: [root project 'anneal', project ':anneal-api', project ':anneal-core', project ':anneal-llm', project ':anneal-store']
+
+> Configure project :
+Evaluating root project 'anneal' using build file '/Users/rish/working/p2-projects/anneal/build.gradle.kts'.
+Resolved plugin [id: 'org.gradle.java']
+Resolved plugin [id: 'io.quarkus', version: '3.33.1', apply: false]
+
+> Configure project :anneal-api
+Evaluating project ':anneal-api' using build file '/Users/rish/working/p2-projects/anneal/anneal-api/build.gradle.kts'.
+Resolved plugin [id: 'io.quarkus']
+
+> Configure project :anneal-core
+Evaluating project ':anneal-core' using build file '/Users/rish/working/p2-projects/anneal/anneal-core/build.gradle.kts'.
+
+> Configure project :anneal-llm
+Evaluating project ':anneal-llm' using build file '/Users/rish/working/p2-projects/anneal/anneal-llm/build.gradle.kts'.
+
+> Configure project :anneal-store
+Evaluating project ':anneal-store' using build file '/Users/rish/working/p2-projects/anneal/anneal-store/build.gradle.kts'.
+All projects evaluated.
+Task path ':anneal-api:test' matched project ':anneal-api'
+Task name matched 'test'
+Selected primary task 'test' from project :anneal-api
+Starting process 'command '/usr/libexec/java_home''. Working directory: /Users/rish/.gradle/daemon/9.4.1 Command: /usr/libexec/java_home -V
+Successfully started process 'command '/usr/libexec/java_home''
+Starting process 'command '/opt/homebrew/Cellar/openjdk/25.0.2/libexec/openjdk.jdk/Contents/Home/bin/java''. Working directory: /Users/rish/.gradle/.tmp/tmp-jvm14408988733342747100probe Command: /opt/homebrew/Cellar/openjdk/25.0.2/libexec/openjdk.jdk/Contents/Home/bin/java -Xmx32m -Xms32m -cp . JavaProbe
+Successfully started process 'command '/opt/homebrew/Cellar/openjdk/25.0.2/libexec/openjdk.jdk/Contents/Home/bin/java''
+Received JVM installation metadata from '/opt/homebrew/Cellar/openjdk/25.0.2/libexec/openjdk.jdk/Contents/Home': {JAVA_HOME=/opt/homebrew/Cellar/openjdk/25.0.2/libexec/openjdk.jdk/Contents/Home, JAVA_VERSION=25.0.2, JAVA_VENDOR=Homebrew, RUNTIME_NAME=OpenJDK Runtime Environment, RUNTIME_VERSION=25.0.2, VM_NAME=OpenJDK 64-Bit Server VM, VM_VERSION=25.0.2, VM_VENDOR=Homebrew, OS_ARCH=aarch64}
+Starting process 'command '/Users/rish/.sdkman/candidates/java/21.0.7-tem/bin/java''. Working directory: /Users/rish/.gradle/.tmp/tmp-jvm13511461429090596856probe Command: /Users/rish/.sdkman/candidates/java/21.0.7-tem/bin/java -Xmx32m -Xms32m -cp . JavaProbe
+Successfully started process 'command '/Users/rish/.sdkman/candidates/java/21.0.7-tem/bin/java''
+Received JVM installation metadata from '/Users/rish/.sdkman/candidates/java/21.0.7-tem': {JAVA_HOME=/Users/rish/.sdkman/candidates/java/21.0.7-tem, JAVA_VERSION=21.0.7, JAVA_VENDOR=Eclipse Adoptium, RUNTIME_NAME=OpenJDK Runtime Environment, RUNTIME_VERSION=21.0.7+6-LTS, VM_NAME=OpenJDK 64-Bit Server VM, VM_VERSION=21.0.7+6-LTS, VM_VENDOR=Eclipse Adoptium, OS_ARCH=aarch64}
+Tasks to be executed: [task ':anneal-api:processResources', task ':anneal-core:compileJava', task ':anneal-core:processResources', task ':anneal-core:classes', task ':anneal-core:jar', task ':anneal-llm:compileJava', task ':anneal-llm:processResources', task ':anneal-llm:classes', task ':anneal-llm:jar', task ':anneal-store:compileJava', task ':anneal-store:processResources', task ':anneal-store:classes', task ':anneal-store:jar', task ':anneal-api:quarkusGenerateAppModel', task ':anneal-api:quarkusGenerateCode', task ':anneal-api:compileJava', task ':anneal-api:classes', task ':anneal-api:compileQuarkusTestGeneratedSourcesJava', task ':anneal-api:quarkusGenerateTestAppModel', task ':anneal-api:quarkusGenerateCodeTests', task ':anneal-api:compileTestJava', task ':anneal-api:processTestResources', task ':anneal-api:testClasses', task ':anneal-api:test']
+Tasks that were excluded: []
+Resolve mutations for :anneal-api:processResources (Thread[#81,Execution worker,5,main]) started.
+:anneal-api:processResources (Thread[#81,Execution worker,5,main]) started.
+
+> Task :anneal-api:processResources UP-TO-DATE
+Caching disabled for task ':anneal-api:processResources' because:
+  Build cache is disabled
+  Not worth caching
+Skipping task ':anneal-api:processResources' as it is up-to-date.
+Resolve mutations for :anneal-core:compileJava (Thread[#81,Execution worker,5,main]) started.
+:anneal-core:compileJava (Thread[#81,Execution worker,5,main]) started.
+
+> Task :anneal-core:compileJava UP-TO-DATE
+Caching disabled for task ':anneal-core:compileJava' because:
+  Build cache is disabled
+Skipping task ':anneal-core:compileJava' as it is up-to-date.
+Resolve mutations for :anneal-core:processResources (Thread[#81,Execution worker,5,main]) started.
+:anneal-core:processResources (Thread[#81,Execution worker,5,main]) started.
+
+> Task :anneal-core:processResources NO-SOURCE
+Skipping task ':anneal-core:processResources' as it has no source files and no previous output files.
+Resolve mutations for :anneal-core:classes (Thread[#81,Execution worker,5,main]) started.
+:anneal-core:classes (Thread[#81,Execution worker,5,main]) started.
+
+> Task :anneal-core:classes UP-TO-DATE
+Skipping task ':anneal-core:classes' as it has no actions.
+Resolve mutations for :anneal-core:jar (Thread[#81,Execution worker,5,main]) started.
+:anneal-core:jar (Thread[#81,Execution worker,5,main]) started.
+
+> Task :anneal-core:jar UP-TO-DATE
+Caching disabled for task ':anneal-core:jar' because:
+  Build cache is disabled
+  Not worth caching
+Skipping task ':anneal-core:jar' as it is up-to-date.
+work action resolve anneal-core-1.0.0-SNAPSHOT.jar (project :anneal-core) (Thread[#81,Execution worker,5,main]) started.
+Resolve mutations for :anneal-llm:compileJava (Thread[#81,Execution worker,5,main]) started.
+:anneal-llm:compileJava (Thread[#81,Execution worker,5,main]) started.
+
+> Task :anneal-llm:compileJava UP-TO-DATE
+Caching disabled for task ':anneal-llm:compileJava' because:
+  Build cache is disabled
+Skipping task ':anneal-llm:compileJava' as it is up-to-date.
+Resolve mutations for :anneal-llm:processResources (Thread[#81,Execution worker,5,main]) started.
+:anneal-llm:processResources (Thread[#81,Execution worker,5,main]) started.
+
+> Task :anneal-llm:processResources UP-TO-DATE
+Caching disabled for task ':anneal-llm:processResources' because:
+  Build cache is disabled
+  Not worth caching
+Skipping task ':anneal-llm:processResources' as it is up-to-date.
+Resolve mutations for :anneal-llm:classes (Thread[#81,Execution worker,5,main]) started.
+:anneal-llm:classes (Thread[#81,Execution worker,5,main]) started.
+
+> Task :anneal-llm:classes UP-TO-DATE
+Skipping task ':anneal-llm:classes' as it has no actions.
+Resolve mutations for :anneal-llm:jar (Thread[#81,Execution worker,5,main]) started.
+:anneal-llm:jar (Thread[#81,Execution worker,5,main]) started.
+
+> Task :anneal-llm:jar UP-TO-DATE
+Caching disabled for task ':anneal-llm:jar' because:
+  Build cache is disabled
+  Not worth caching
+Skipping task ':anneal-llm:jar' as it is up-to-date.
+work action resolve anneal-llm-1.0.0-SNAPSHOT.jar (project :anneal-llm) (Thread[#81,Execution worker,5,main]) started.
+Resolve mutations for :anneal-store:compileJava (Thread[#81,Execution worker,5,main]) started.
+:anneal-store:compileJava (Thread[#81,Execution worker,5,main]) started.
+
+> Task :anneal-store:compileJava UP-TO-DATE
+Caching disabled for task ':anneal-store:compileJava' because:
+  Build cache is disabled
+Skipping task ':anneal-store:compileJava' as it is up-to-date.
+Resolve mutations for :anneal-store:processResources (Thread[#81,Execution worker,5,main]) started.
+:anneal-store:processResources (Thread[#81,Execution worker,5,main]) started.
+
+> Task :anneal-store:processResources UP-TO-DATE
+Caching disabled for task ':anneal-store:processResources' because:
+  Build cache is disabled
+  Not worth caching
+Skipping task ':anneal-store:processResources' as it is up-to-date.
+Resolve mutations for :anneal-store:classes (Thread[#81,Execution worker,5,main]) started.
+:anneal-store:classes (Thread[#81,Execution worker,5,main]) started.
+
+> Task :anneal-store:classes UP-TO-DATE
+Skipping task ':anneal-store:classes' as it has no actions.
+Resolve mutations for :anneal-store:jar (Thread[#81,Execution worker,5,main]) started.
+:anneal-store:jar (Thread[#81,Execution worker,5,main]) started.
+
+> Task :anneal-store:jar UP-TO-DATE
+Caching disabled for task ':anneal-store:jar' because:
+  Build cache is disabled
+  Not worth caching
+Skipping task ':anneal-store:jar' as it is up-to-date.
+work action resolve anneal-store-1.0.0-SNAPSHOT.jar (project :anneal-store) (Thread[#81,Execution worker,5,main]) started.
+Resolve mutations for :anneal-api:quarkusGenerateAppModel (Thread[#81,Execution worker,5,main]) started.
+:anneal-api:quarkusGenerateAppModel (Thread[#81,Execution worker,5,main]) started.
+
+> Task :anneal-api:quarkusGenerateAppModel UP-TO-DATE
+Caching disabled for task ':anneal-api:quarkusGenerateAppModel' because:
+  Build cache is disabled
+  Caching has not been enabled for the task
+Skipping task ':anneal-api:quarkusGenerateAppModel' as it is up-to-date.
+Resolve mutations for :anneal-api:quarkusGenerateCode (Thread[#81,Execution worker,5,main]) started.
+:anneal-api:quarkusGenerateCode (Thread[#81,Execution worker,5,main]) started.
+
+> Task :anneal-api:quarkusGenerateCode UP-TO-DATE
+Caching disabled for task ':anneal-api:quarkusGenerateCode' because:
+  Build cache is disabled
+Skipping task ':anneal-api:quarkusGenerateCode' as it is up-to-date.
+Resolve mutations for :anneal-api:compileJava (Thread[#81,Execution worker,5,main]) started.
+:anneal-api:compileJava (Thread[#81,Execution worker,5,main]) started.
+
+> Task :anneal-api:compileJava UP-TO-DATE
+Caching disabled for task ':anneal-api:compileJava' because:
+  Build cache is disabled
+Skipping task ':anneal-api:compileJava' as it is up-to-date.
+Resolve mutations for :anneal-api:classes (Thread[#81,Execution worker,5,main]) started.
+:anneal-api:classes (Thread[#81,Execution worker,5,main]) started.
+
+> Task :anneal-api:classes UP-TO-DATE
+Skipping task ':anneal-api:classes' as it has no actions.
+Resolve mutations for :anneal-api:compileQuarkusTestGeneratedSourcesJava (Thread[#81,Execution worker,5,main]) started.
+:anneal-api:compileQuarkusTestGeneratedSourcesJava (Thread[#81,Execution worker,5,main]) started.
+
+> Task :anneal-api:compileQuarkusTestGeneratedSourcesJava NO-SOURCE
+Skipping task ':anneal-api:compileQuarkusTestGeneratedSourcesJava' as it has no source files and no previous output files.
+Resolve mutations for :anneal-api:quarkusGenerateTestAppModel (Thread[#81,Execution worker,5,main]) started.
+:anneal-api:quarkusGenerateTestAppModel (Thread[#81,Execution worker,5,main]) started.
+
+> Task :anneal-api:quarkusGenerateTestAppModel UP-TO-DATE
+Caching disabled for task ':anneal-api:quarkusGenerateTestAppModel' because:
+  Build cache is disabled
+  Caching has not been enabled for the task
+Skipping task ':anneal-api:quarkusGenerateTestAppModel' as it is up-to-date.
+Resolve mutations for :anneal-api:quarkusGenerateCodeTests (Thread[#81,Execution worker,5,main]) started.
+:anneal-api:quarkusGenerateCodeTests (Thread[#81,Execution worker,5,main]) started.
+
+> Task :anneal-api:quarkusGenerateCodeTests UP-TO-DATE
+Caching disabled for task ':anneal-api:quarkusGenerateCodeTests' because:
+  Build cache is disabled
+Skipping task ':anneal-api:quarkusGenerateCodeTests' as it is up-to-date.
+Resolve mutations for :anneal-api:compileTestJava (Thread[#81,Execution worker,5,main]) started.
+:anneal-api:compileTestJava (Thread[#81,Execution worker,5,main]) started.
+
+> Task :anneal-api:compileTestJava UP-TO-DATE
+Caching disabled for task ':anneal-api:compileTestJava' because:
+  Build cache is disabled
+Skipping task ':anneal-api:compileTestJava' as it is up-to-date.
+Resolve mutations for :anneal-api:processTestResources (Thread[#81,Execution worker,5,main]) started.
+:anneal-api:processTestResources (Thread[#81,Execution worker,5,main]) started.
+
+> Task :anneal-api:processTestResources UP-TO-DATE
+Caching disabled for task ':anneal-api:processTestResources' because:
+  Build cache is disabled
+  Not worth caching
+Skipping task ':anneal-api:processTestResources' as it is up-to-date.
+Resolve mutations for :anneal-api:testClasses (Thread[#81,Execution worker,5,main]) started.
+:anneal-api:testClasses (Thread[#81,Execution worker,5,main]) started.
+
+> Task :anneal-api:testClasses UP-TO-DATE
+Skipping task ':anneal-api:testClasses' as it has no actions.
+Resolve mutations for :anneal-api:test (Thread[#81,Execution worker,5,main]) started.
+:anneal-api:test (Thread[#81,Execution worker,5,main]) started.
+Gradle Test Executor 1 started executing tests.
+Loading JUnit Platform configuration parameters from classpath resource [jar:file:/Users/rish/.gradle/caches/modules-2/files-2.1/io.quarkus/quarkus-junit-config/3.33.1/3c98f587a25b3353042f4d8bd62883aed33fb5f7/quarkus-junit-config-3.33.1.jar!/junit-platform.properties].
+Loaded LauncherSessionListener instances: [io.quarkus.test.junit.launcher.CustomLauncherInterceptor@2eae8e6e, io.quarkus.test.config.ConfigLauncherSession@8f2ef19]
+Discovered TestEngines:
+- junit-jupiter (group ID: org.junit.jupiter, artifact ID: junit-jupiter-engine, version: 6.0.3, location: jar:file:/Users/rish/.gradle/caches/modules-2/files-2.1/org.junit.jupiter/junit-jupiter-engine/6.0.3/e26f7e17d06cfc85ba7643b5ad00c87d5f2084dd/junit-jupiter-engine-6.0.3.jar!/org/junit/jupiter/engine/JupiterTestEngine.class)
+Loaded PostDiscoveryFilter instances: []
+Loaded LauncherDiscoveryListener instances: [io.quarkus.test.junit.launcher.CustomLauncherInterceptor@304bb45b]
+Loaded TestExecutionListener instances: [io.quarkus.test.junit.launcher.ExecutionListener@673fdbce, io.quarkus.test.junit.launcher.CustomLauncherInterceptor@5965d37, org.junit.platform.launcher.listeners.UniqueIdTrackingListener@7a5ceedd] (excluded classes: [])
+Testcontainers version: 2.0.3
+
+> Task :anneal-api:test
+Custom actions are attached to task ':anneal-api:test'.
+Caching disabled for task ':anneal-api:test' because:
+  Build cache is disabled
+Task ':anneal-api:test' is not up-to-date because:
+  Task has failed previously.
+Starting process 'Gradle Test Executor 1'. Working directory: /Users/rish/working/p2-projects/anneal/anneal-api Command: /Users/rish/.sdkman/candidates/java/25.0.2-tem/bin/java -DOUTPUT_SOURCES_DIR=/Users/rish/working/p2-projects/anneal/anneal-api/build/classes/java/main,/Users/rish/working/p2-projects/anneal/anneal-api/build/classes/java/test -Djava.util.logging.manager=org.jboss.logmanager.LogManager -Dnative.image.path=/Users/rish/working/p2-projects/anneal/anneal-api/build/anneal-api-1.0.0-SNAPSHOT-runner -Dorg.gradle.internal.worker.tmpdir=/Users/rish/working/p2-projects/anneal/anneal-api/build/tmp/test/work -Dquarkus-internal-test.serialized-app-model.path=/Users/rish/working/p2-projects/anneal/anneal-api/build/quarkus/application-model/quarkus-app-test-model.dat --add-opens=java.base/java.lang.invoke=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED --add-exports=java.base/jdk.internal.module=ALL-UNNAMED @/Users/rish/.gradle/.tmp/gradle-worker-classpath16938359084688986930txt -Xmx512m -Dfile.encoding=UTF-8 -Duser.country=US -Duser.language=en -Duser.variant -ea worker.org.gradle.process.internal.worker.GradleWorkerMain 'Gradle Test Executor 1'
+Successfully started process 'Gradle Test Executor 1'
+
+Gradle Test Executor 1 STANDARD_OUT
+    2026-04-27 11:56:47,902 INFO  [org.testcontainers.DockerClientFactory] (build-5) Testcontainers version: 2.0.3
+
+Detected bean archive with bean discovery mode of 'all', this is not portable in CDI Lite and is treated as 'annotated' in Quarkus! Path to beans.xml: com.rish.anneal:anneal-llm:1.0.0-SNAPSHOT:/META-INF/beans.xml
+Loaded org.testcontainers.dockerclient.UnixSocketClientProviderStrategy from ~/.testcontainers.properties, will try it first
+Not starting Ollama dev services container, as there is already an Ollama instance running on port 11434
+Found Docker environment with local Unix socket (unix:///var/run/docker.sock)
+Docker host IP address is localhost
+Connected to docker: 
+  Server Version: 29.2.1
+  API Version: 1.53
+  Operating System: Docker Desktop
+  Total Memory: 9936 MB
+  Labels: 
+    com.docker.desktop.address=unix:///Users/rish/Library/Containers/com.docker.docker/Data/docker-cli.sock
+Image pull policy will be performed by: DefaultPullPolicy()
+Image name substitution will be performed by: DefaultImageNameSubstitutor (composite of ConfigurationFileImageNameSubstitutor and PrefixingImageNameSubstitutor)
+Checking the system...
+✔︎ Docker server version should be at least 1.6.0
+Testcontainers version: 2.0.3
+Detected bean archive with bean discovery mode of 'all', this is not portable in CDI Lite and is treated as 'annotated' in Quarkus! Path to beans.xml: com.rish.anneal:anneal-llm:1.0.0-SNAPSHOT:/META-INF/beans.xml
+Loaded org.testcontainers.dockerclient.UnixSocketClientProviderStrategy from ~/.testcontainers.properties, will try it first
+
+> Task :anneal-api:test
+    2026-04-27 11:56:47,924 WARN  [io.quarkus.arc.deployment.BeanArchiveProcessor] (build-15) Detected bean archive with bean discovery mode of 'all', this is not portable in CDI Lite and is treated as 'annotated' in Quarkus! Path to beans.xml: com.rish.anneal:anneal-llm:1.0.0-SNAPSHOT:/META-INF/beans.xml
+    2026-04-27 11:56:48,107 INFO  [org.testcontainers.dockerclient.DockerClientProviderStrategy] (build-5) Loaded org.testcontainers.dockerclient.UnixSocketClientProviderStrategy from ~/.testcontainers.properties, will try it first
+    2026-04-27 11:56:48,133 INFO  [io.quarkiverse.langchain4j.ollama.deployment.devservices.OllamaDevServicesProcessor] (build-14) Not starting Ollama dev services container, as there is already an Ollama instance running on port 11434
+    2026-04-27 11:56:48,567 INFO  [org.testcontainers.dockerclient.DockerClientProviderStrategy] (build-5) Found Docker environment with local Unix socket (unix:///var/run/docker.sock)
+    2026-04-27 11:56:48,569 INFO  [org.testcontainers.DockerClientFactory] (build-5) Docker host IP address is localhost
+    2026-04-27 11:56:48,583 INFO  [org.testcontainers.DockerClientFactory] (build-5) Connected to docker: 
+      Server Version: 29.2.1
+      API Version: 1.53
+      Operating System: Docker Desktop
+      Total Memory: 9936 MB
+      Labels: 
+        com.docker.desktop.address=unix:///Users/rish/Library/Containers/com.docker.docker/Data/docker-cli.sock
+    2026-04-27 11:56:48,596 INFO  [org.testcontainers.images.PullPolicy] (build-5) Image pull policy will be performed by: DefaultPullPolicy()
+    2026-04-27 11:56:48,597 INFO  [org.testcontainers.utility.ImageNameSubstitutor] (build-5) Image name substitution will be performed by: DefaultImageNameSubstitutor (composite of 'ConfigurationFileImageNameSubstitutor' and 'PrefixingImageNameSubstitutor')
+    2026-04-27 11:56:48,600 INFO  [org.testcontainers.DockerClientFactory] (build-5) Checking the system...
+    2026-04-27 11:56:48,600 INFO  [org.testcontainers.DockerClientFactory] (build-5) ✔︎ Docker server version should be at least 1.6.0
+    2026-04-27 11:56:49,723 INFO  [org.testcontainers.DockerClientFactory] (build-9) Testcontainers version: 2.0.3
+    2026-04-27 11:56:49,763 WARN  [io.quarkus.arc.deployment.BeanArchiveProcessor] (build-12) Detected bean archive with bean discovery mode of 'all', this is not portable in CDI Lite and is treated as 'annotated' in Quarkus! Path to beans.xml: com.rish.anneal:anneal-llm:1.0.0-SNAPSHOT:/META-INF/beans.xml
+    2026-04-27 11:56:49,861 INFO  [org.testcontainers.dockerclient.DockerClientProviderStrategy] (build-9) Loaded org.testcontainers.dockerclient.UnixSocketClientProviderStrategy from ~/.testcontainers.properties, will try it first
+
+Not starting Ollama dev services container, as there is already an Ollama instance running on port 11434
+Found Docker environment with local Unix socket (unix:///var/run/docker.sock)
+Docker host IP address is localhost
+Connected to docker: 
+  Server Version: 29.2.1
+  API Version: 1.53
+  Operating System: Docker Desktop
+  Total Memory: 9936 MB
+  Labels: 
+    com.docker.desktop.address=unix:///Users/rish/Library/Containers/com.docker.docker/Data/docker-cli.sock
+Image pull policy will be performed by: DefaultPullPolicy()
+Image name substitution will be performed by: DefaultImageNameSubstitutor (composite of ConfigurationFileImageNameSubstitutor and PrefixingImageNameSubstitutor)
+Checking the system...
+✔︎ Docker server version should be at least 1.6.0
+Creating container for image: pgvector/pgvector:pg16
+Reuse was requested but the environment does not support the reuse of containers
+To enable reuse of containers, you must set testcontainers.reuse.enable=true in a file located at /Users/rish/.testcontainers.properties
+Creating container for image: testcontainers/ryuk:0.13.0
+Container testcontainers/ryuk:0.13.0 is starting: 9f5c97a76067ecfce6e1fe08c21997915148792569b87b63308e49ca23b7b46a
+Container testcontainers/ryuk:0.13.0 started in PT0.262717S
+Container pgvector/pgvector:pg16 is starting: 1a68ef55e76453e02cb565f0a8378cb34b9ece8368301d8deff93b426fe6c9cd
+
+> Task :anneal-api:test
+    2026-04-27 11:56:49,922 INFO  [io.quarkiverse.langchain4j.ollama.deployment.devservices.OllamaDevServicesProcessor] (build-8) Not starting Ollama dev services container, as there is already an Ollama instance running on port 11434
+    2026-04-27 11:56:50,005 INFO  [org.testcontainers.dockerclient.DockerClientProviderStrategy] (build-9) Found Docker environment with local Unix socket (unix:///var/run/docker.sock)
+    2026-04-27 11:56:50,007 INFO  [org.testcontainers.DockerClientFactory] (build-9) Docker host IP address is localhost
+    2026-04-27 11:56:50,024 INFO  [org.testcontainers.DockerClientFactory] (build-9) Connected to docker: 
+      Server Version: 29.2.1
+      API Version: 1.53
+      Operating System: Docker Desktop
+      Total Memory: 9936 MB
+      Labels: 
+        com.docker.desktop.address=unix:///Users/rish/Library/Containers/com.docker.docker/Data/docker-cli.sock
+    2026-04-27 11:56:50,033 INFO  [org.testcontainers.images.PullPolicy] (build-9) Image pull policy will be performed by: DefaultPullPolicy()
+    2026-04-27 11:56:50,036 INFO  [org.testcontainers.utility.ImageNameSubstitutor] (build-9) Image name substitution will be performed by: DefaultImageNameSubstitutor (composite of 'ConfigurationFileImageNameSubstitutor' and 'PrefixingImageNameSubstitutor')
+    2026-04-27 11:56:50,043 INFO  [org.testcontainers.DockerClientFactory] (build-9) Checking the system...
+    2026-04-27 11:56:50,044 INFO  [org.testcontainers.DockerClientFactory] (build-9) ✔︎ Docker server version should be at least 1.6.0
+
+CloudModelValidationIT STANDARD_OUT
+    2026-04-27 11:56:50,665 INFO  [tc.pgvector/pgvector:pg16] (ForkJoinPool.commonPool-worker-1) Creating container for image: pgvector/pgvector:pg16
+    2026-04-27 11:56:50,803 WARN  [tc.pgvector/pgvector:pg16] (ForkJoinPool.commonPool-worker-1) Reuse was requested but the environment does not support the reuse of containers
+    To enable reuse of containers, you must set 'testcontainers.reuse.enable=true' in a file located at /Users/rish/.testcontainers.properties
+    2026-04-27 11:56:50,804 INFO  [tc.testcontainers/ryuk:0.13.0] (ForkJoinPool.commonPool-worker-1) Creating container for image: testcontainers/ryuk:0.13.0
+    2026-04-27 11:56:50,879 INFO  [tc.testcontainers/ryuk:0.13.0] (ForkJoinPool.commonPool-worker-1) Container testcontainers/ryuk:0.13.0 is starting: 9f5c97a76067ecfce6e1fe08c21997915148792569b87b63308e49ca23b7b46a
+    2026-04-27 11:56:51,067 INFO  [tc.testcontainers/ryuk:0.13.0] (ForkJoinPool.commonPool-worker-1) Container testcontainers/ryuk:0.13.0 started in PT0.262717S
+    2026-04-27 11:56:51,107 INFO  [tc.pgvector/pgvector:pg16] (ForkJoinPool.commonPool-worker-1) Container pgvector/pgvector:pg16 is starting: 1a68ef55e76453e02cb565f0a8378cb34b9ece8368301d8deff93b426fe6c9cd
+
+Container pgvector/pgvector:pg16 started in PT1.349832S
+Container is started (JDBC URL: jdbc:postgresql://localhost:65393/quarkus?loggerLevel=OFF)
+Dev Services for default datasource (postgresql) started - container ID is 1a68ef55e764
+HHH008540: Processing PersistenceUnitInfo [name: <default>]
+HHH000001: Hibernate ORM core version 7.2.6.Final
+HHH10001005: Database info:
+	Database JDBC URL [undefined/unknown]
+	Database driver: undefined/unknown
+	Database dialect: PostgreSQLDialect
+	Database version: 13.0
+	Default catalog/schema: unknown/unknown
+	Autocommit mode: undefined/unknown
+	Isolation level: <unknown>
+	JDBC fetch size: undefined/unknown
+	Pool: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+HV000001: Hibernate Validator 9.1.0.Final
+The "quarkus.hibernate-orm.database.generation" config property is deprecated and should not be used anymore.
+Database: jdbc:postgresql://localhost:5432/anneal (PostgreSQL 16.13)
+Successfully validated 6 migrations (execution time 00:00.013s)
+Current version of schema "public": 5
+Schema "public" is up to date. No migration necessary.
+anneal 1.0.0-SNAPSHOT on JVM (powered by Quarkus 3.33.1) started in 6.787s. Listening on: http://localhost:8081
+Profile test activated. 
+Installed features: [agroal, cdi, compose, config-yaml, flyway, hibernate-orm, hibernate-orm-panache, hibernate-validator, jdbc-postgresql, langchain4j, langchain4j-ollama, langchain4j-ollama-dev-service, langchain4j-pgvector, narayana-jta, qute, rest, rest-client, rest-client-jackson, rest-jackson, smallrye-context-propagation, smallrye-health, smallrye-openapi, swagger-ui, vertx]
+Anthropic cloud model enabled: claude-sonnet-4-6
+LLM enrichment initialised — code: codellama:13b, prose: llama3.1:8b, cloud: claude-sonnet-4-6
+Starting parallel enrichment — 8 findings, concurrency: 4
+
+> Task :anneal-api:test
+    2026-04-27 11:56:52,015 INFO  [tc.pgvector/pgvector:pg16] (ForkJoinPool.commonPool-worker-1) Container pgvector/pgvector:pg16 started in PT1.349832S
+    2026-04-27 11:56:52,016 INFO  [tc.pgvector/pgvector:pg16] (ForkJoinPool.commonPool-worker-1) Container is started (JDBC URL: jdbc:postgresql://localhost:65393/quarkus?loggerLevel=OFF)
+    2026-04-27 11:56:52,017 INFO  [io.quarkus.datasource.deployment.devservices.DevServicesDatasourceProcessor] (ForkJoinPool.commonPool-worker-1) Dev Services for default datasource (postgresql) started - container ID is 1a68ef55e764
+    2026-04-27 11:56:52,169 INFO  [org.hibernate.orm.jpa] (Test worker) HHH008540: Processing PersistenceUnitInfo [name: <default>]
+    2026-04-27 11:56:52,263 INFO  [org.hibernate.orm.core] (Test worker) HHH000001: Hibernate ORM core version 7.2.6.Final
+    2026-04-27 11:56:52,399 INFO  [org.hibernate.orm.connections.pooling] (Test worker) HHH10001005: Database info:
+    	Database JDBC URL [undefined/unknown]
+    	Database driver: undefined/unknown
+    	Database dialect: PostgreSQLDialect
+    	Database version: 13.0
+    	Default catalog/schema: unknown/unknown
+    	Autocommit mode: undefined/unknown
+    	Isolation level: <unknown>
+    	JDBC fetch size: undefined/unknown
+    	Pool: undefined/unknown
+    	Minimum pool size: undefined/unknown
+    	Maximum pool size: undefined/unknown
+    2026-04-27 11:56:52,513 INFO  [org.hibernate.validator.internal.util.Version] (Test worker) HV000001: Hibernate Validator 9.1.0.Final
+    2026-04-27 11:56:52,767 WARN  [io.quarkus.config] (Test worker) The "quarkus.hibernate-orm.database.generation" config property is deprecated and should not be used anymore.
+    2026-04-27 11:56:53,054 INFO  [org.flywaydb.core.FlywayExecutor] (Test worker) Database: jdbc:postgresql://localhost:5432/anneal (PostgreSQL 16.13)
+    2026-04-27 11:56:53,088 INFO  [org.flywaydb.core.internal.command.DbValidate] (Test worker) Successfully validated 6 migrations (execution time 00:00.013s)
+    2026-04-27 11:56:53,111 INFO  [org.flywaydb.core.internal.command.DbMigrate] (Test worker) Current version of schema "public": 5
+    2026-04-27 11:56:53,115 INFO  [org.flywaydb.core.internal.command.DbMigrate] (Test worker) Schema "public" is up to date. No migration necessary.
+    2026-04-27 11:56:53,519 INFO  [io.quarkus] (Test worker) anneal 1.0.0-SNAPSHOT on JVM (powered by Quarkus 3.33.1) started in 6.787s. Listening on: http://localhost:8081
+    2026-04-27 11:56:53,519 INFO  [io.quarkus] (Test worker) Profile test activated. 
+    2026-04-27 11:56:53,519 INFO  [io.quarkus] (Test worker) Installed features: [agroal, cdi, compose, config-yaml, flyway, hibernate-orm, hibernate-orm-panache, hibernate-validator, jdbc-postgresql, langchain4j, langchain4j-ollama, langchain4j-ollama-dev-service, langchain4j-pgvector, narayana-jta, qute, rest, rest-client, rest-client-jackson, rest-jackson, smallrye-context-propagation, smallrye-health, smallrye-openapi, swagger-ui, vertx]
+
+CloudModelValidationIT > cloudExplanations_areNonEmpty_andRespectVersionFacts() STANDARD_OUT
+
+    ══════════════════════════════════════════════════
+      Cloud model validation — claude-sonnet-4-6
+    ══════════════════════════════════════════════════
+    2026-04-27 11:56:53,679 INFO  [anneal.llm] (Test worker) Anthropic cloud model enabled: claude-sonnet-4-6
+    2026-04-27 11:56:53,679 INFO  [anneal.llm] (Test worker) LLM enrichment initialised — code: codellama:13b, prose: llama3.1:8b, cloud: claude-sonnet-4-6
+    2026-04-27 11:56:53,679 INFO  [anneal.llm] (Test worker) Starting parallel enrichment — 8 findings, concurrency: 4
+
+Enrichment complete — 8/8 findings enriched in 55306ms
+
+> Task :anneal-api:test
+    2026-04-27 11:57:48,985 INFO  [anneal.llm] (Test worker) Enrichment complete — 8/8 findings enriched in 55306ms
+
+    [95927fb2-dbfe-47e0-94af-3f4acaf5a534] rule=JPMS_UNSAFE_USAGE severity=BREAKING
+    model    : claude-sonnet-4-6
+    explanation: `sun.misc.Unsafe` became problematic starting in Java 9 with the introduction of the Java Platform Module System (JPMS), which encapsulates internal JDK APIs by default, meaning `sun.misc.Unsafe.getUnsafe()` is no longer freely accessible from application code and is deprecated for removal, making any code relying on it a future breaking change. The recommended migration approach is to replace direct `sun.misc.Unsafe` usage with the standard `java.lang.invoke.VarHandle` API, which provides equivalent low-level atomic read, write, and compare-and-set operations (e.g., `MethodHandles.lookup().findVarHandle(...)`) as a fully supported, module-system-compatible alternative. Developers must be aware that `VarHandle` operations carry strict memory-ordering semantics (plain, opaque, acquire/release, and volatile modes) that must be explicitly chosen to match the original `Unsafe` operation's intent, and that incorrect mode selection can introduce subtle data races or violate the memory visibility guarantees your code previously relied upon.
+    expected version facts: introduced=Java 9, hardBreak=no hard removal date
+    ──────────────────────────────────────────────────
+
+    [d1abcfff-59b7-4faa-a24b-8ae46a6b3f85] rule=API_JAXB_REMOVED severity=BREAKING
+    model    : codellama:13b
+    explanation: The JAXBContext class was removed from Java 9, so it's no longer available in later versions of Java. To use JAXBContext in a migration to Java 11 or later, you must add the dependency jakarta.xml.bind:jakarta.xml.bind-api:4.0.0 and then import the necessary classes from that library instead.
+    expected version facts: introduced=Java 9 (deprecated), hardBreak=Java 11
+    ──────────────────────────────────────────────────
+
+    [9c65705b-f9fe-4df3-b382-9bbc06fb7cd2] rule=JPMS_ILLEGAL_REFLECTIVE_ACCESS severity=BREAKING
+    model    : codellama:13b
+    explanation: This migration finding indicates that a Java 9+ application is using illegal reflective access to access a private field of a class in the `java.lang` package. The reflection API has been tightened in Java 9, and the use of `setAccessible(true)` on private fields is no longer allowed.
+
+    To fix this issue, either add `--add-opens java.base/java.lang=ALL-UNNAMED` to the command line arguments when running the application or refactor the code to avoid using reflection altogether. The suggested replacement achieves this by opening up the `java.lang` package for reflection, allowing the private fields to be accessed.
+
+    This change is necessary because Java 9+ has stricter rules around reflective access, and using `--add-opens` allows the application to continue accessing private fields while still following the new rules.
+    expected version facts: introduced=Java 9, hardBreak=Java 17
+    ──────────────────────────────────────────────────
+
+    [79ca11bb-f9c7-41e6-92a7-b266d9adbeb2] rule=DEPRECATION_FINALIZE severity=DEPRECATED
+    model    : llama3.1:8b
+    explanation: The `finalize()` method is deprecated since Java 9, which means it's a part of the language that may be removed in future versions, up to and including Java 21.
+
+    This deprecation is necessary because the `finalize()` method has been replaced by Cleaner (java.lang.ref.Cleaner), which provides a more efficient and controlled way to perform cleanup operations. 
+
+    The suggested replacement achieves better performance by allowing for more precise control over when cleanup occurs.
+    expected version facts: introduced=Java 9, hardBreak=Java 21
+    ──────────────────────────────────────────────────
+
+    [597f6a50-9828-47ec-b600-aefb95864d1b] rule=JPMS_SUN_IMPORT severity=BREAKING
+    model    : codellama:13b
+    explanation: This migration finding suggests that you should replace your use of `sun.misc.BASE64Encoder` with `java.util.Base64`, as `sun.misc.BASE64Encoder` is deprecated and will be removed in a future release of Java.
+
+    The reason for this change is that the `sun.misc` package, which contains `BASE64Encoder`, is part of the Sun Microsystems proprietary API and is not intended to be used by applications outside of Sun's own codebase. The `java.util.Base64` class, on the other hand, is a standard Java class that provides a base 64 encoder and decoder, and it has been available since Java 8.
+
+    The suggested replacement achieves compatibility with future releases of Java by using a standard API that is maintained by Oracle and will continue to be supported in the future. Additionally, `java.util.Base64` provides more advanced features than `sun.misc.BASE64Encoder`, such as support for URL-safe base 64 encoding and decoding.
+    expected version facts: introduced=Java 9, hardBreak=no hard removal date
+    ──────────────────────────────────────────────────
+
+    [a6b283cc-1464-451a-b542-7bd1fa67bf9e] rule=API_JAX_WS_REMOVED severity=BREAKING
+    model    : codellama:13b
+    explanation: This migration finding reports that the `javax.xml.ws` package has been removed in Java 11, and that any code using this package should be updated to use the Jakarta equivalent instead. The suggested replacement is to add a dependency on the `jakarta.xml.ws-api` artifact with version `4.0.0`.
+
+    This change is necessary because the `javax.xml.ws` package was part of the Java EE (Enterprise Edition) platform, which has been deprecated and replaced by Jakarta EE. The `jakarta.xml.ws-api` artifact provides a compatible implementation of the `Service` class that can be used instead of the removed `javax.xml.ws.Service` class.
+    expected version facts: introduced=Java 9 (deprecated), hardBreak=Java 11
+    ──────────────────────────────────────────────────
+
+    [5d5e4403-7091-4f00-9e58-1e57054d1a0f] rule=DEPRECATION_SECURITY_MANAGER severity=DEPRECATED
+    model    : claude-sonnet-4-6
+    explanation: `SecurityManager` was deprecated for removal in Java 17 and permanently removed in Java 21, meaning any code invoking `System.setSecurityManager(new SecurityManager())` will throw an `UnsupportedOperationException` at runtime in Java 17 (with a system property override required just to enable it) and will fail to compile or execute entirely in Java 21. The recommended migration approach is to remove all `SecurityManager` installation and policy-checking code entirely, then enforce access restrictions through OS-level sandboxing mechanisms such as Linux seccomp/namespaces, container security profiles (e.g., Docker AppArmor/seccomp policies), or Java module system boundaries via the `--add-exports`/`--add-opens` flags to control encapsulation at the JVM level. Because `SecurityManager` previously enforced access checks synchronously within the same JVM, its removal means there is no in-process equivalent, so developers must ensure that any previously guarded operations — such as file I/O, network access, or reflective calls — are now controlled externally or architecturally restructured (e.g., running untrusted code in a separate sandboxed process), and any custom `SecurityManager` subclass logic implementing `checkPermission` callbacks must be reimplemented as explicit application-level authorization guards.
+    expected version facts: introduced=Java 17, hardBreak=Java 21
+    ──────────────────────────────────────────────────
+
+    [dcc9fd13-8fb1-4640-be63-8df8bac94865] rule=LANGUAGE_OLD_DATETIME_API severity=MODERNIZATION
+    model    : llama3.1:8b
+    explanation: This migration is necessary because using the old datetime API with `Date` and `Calendar` objects can lead to issues such as timezone handling problems and potential performance issues, especially in modern Java versions.
+
+    The suggested replacement, using `java.time.LocalDate` or `ZonedDateTime`, provides a more robust and thread-safe way of working with dates and times. 
+
+    This change will help improve code reliability and maintainability by utilizing the newer API's features.
+    expected version facts: introduced=Java 8 (modern alternative available), hardBreak=not removed
+    ──────────────────────────────────────────────────
+
+    ══ Validation complete ══
+
+
+anneal stopped in 0.235s
+Gradle Test Executor 1 finished executing tests.
+
+> Task :anneal-api:test
+
+Gradle Test Executor 1 STANDARD_OUT
+    2026-04-27 11:57:49,354 INFO  [io.quarkus] (Test worker) anneal stopped in 0.235s
+Generating HTML test report...
+Finished generating test html results (0.028 secs) into: /Users/rish/working/p2-projects/anneal/anneal-api/build/reports/tests/test
+Finished generating test XML results (0.014 secs) into: /Users/rish/working/p2-projects/anneal/anneal-api/build/test-results/test
+
+BUILD SUCCESSFUL in 1m 8s
+17 actionable tasks: 1 executed, 16 up-to-date
+Watched directory hierarchies: [/Users/rish/working/p2-projects/anneal]
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.4.1/userguide/configuration_cache_enabling.html
