@@ -84,6 +84,29 @@ public class ScanResultRepository {
         return updated > 0;
     }
 
+    /**
+     * Persists LLM enrichment results for a single finding.
+     *
+     * <p>Called by the background enrichment task after each successful
+     * {@code enrich()} call — findings are persisted as they complete rather
+     * than waiting for the full batch. The frontend polls
+     * {@code GET /api/scans/{scanId}} and sees explanations fill in progressively.
+     *
+     * @param findingId   the finding to update
+     * @param explanation the LLM-generated explanation
+     * @param provider    OLLAMA or ANTHROPIC
+     * @param model       model name e.g. codellama:13b
+     */
+    @Transactional
+    public void updateFindingEnrichment(String findingId,
+                                        String explanation,
+                                        String provider,
+                                        String model) {
+        FindingEntity.update(
+                "llmExplanation = ?1, llmProvider = ?2, llmModel = ?3 WHERE findingId = ?4",
+                explanation, provider, model, findingId
+        );
+    }
 
     private ScanResultEntity toEntity(ScanResult result) {
         RiskScoreCalculator.RiskBand band = riskScoreCalculator.band(result.getRiskScore());

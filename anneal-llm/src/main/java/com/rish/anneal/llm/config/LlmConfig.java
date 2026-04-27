@@ -26,21 +26,31 @@ import java.util.Optional;
 @ConfigMapping(prefix = "anneal.llm")
 public interface LlmConfig {
 
-    /** Active provider — ollama (default) or anthropic */
+    /**
+     * Active provider — ollama (default) or anthropic
+     */
     @WithDefault("ollama")
     String provider();
 
-    /** Ollama-specific config */
+    /**
+     * Ollama-specific config
+     */
     Ollama ollama();
 
-    /** Anthropic-specific config */
+    /**
+     * Anthropic-specific config
+     */
     Anthropic anthropic();
 
-    /** Enable Anthropic cloud fallback for MANUAL effort findings. */
+    /**
+     * Enable Anthropic cloud fallback for MANUAL effort findings.
+     */
     @WithDefault("false")
     boolean allowCloudFallback();
 
-    /** LLM request timeout in seconds. 120s accommodates codellama:13b cold start. */
+    /**
+     * LLM request timeout in seconds. 120s accommodates codellama:13b cold start.
+     */
     @WithDefault("120")
     int timeoutSeconds();
 
@@ -51,8 +61,20 @@ public interface LlmConfig {
     @WithDefault("true")
     boolean enrichmentEnabled();
 
+    /**
+     * Number of findings to enrich concurrently.
+     * Ollama serializes GPU work — 3 keeps the queue short and allows
+     * mixed-model findings (codellama + llama3.1) to overlap without
+     * flooding the GPU context switching overhead.
+     * Tune upward for remote Ollama or Anthropic-only scans.
+     */
+    @WithDefault("3")
+    int enrichmentConcurrency();
+
     interface Ollama {
-        /** Ollama base URL. */
+        /**
+         * Ollama base URL.
+         */
         @WithDefault("http://localhost:11434")
         String baseUrl();
 
@@ -72,10 +94,14 @@ public interface LlmConfig {
     }
 
     interface Anthropic {
-        /** Anthropic API key — required only when allow-cloud-fallback is true. */
+        /**
+         * Anthropic API key — required only when allow-cloud-fallback is true.
+         */
         Optional<String> apiKey();
 
-        /** Anthropic model for deep refactors requiring complex reasoning. */
+        /**
+         * Anthropic model for deep refactors requiring complex reasoning.
+         */
         @WithDefault("claude-sonnet-4-6")
         String model();
     }

@@ -15,7 +15,7 @@ import com.rish.anneal.core.rule.MigrationRule;
 import com.rish.anneal.core.scanner.BuildFileScanner;
 import com.rish.anneal.core.scanner.CodebaseScanner;
 import com.rish.anneal.core.scanner.VersionDetector;
-import com.rish.anneal.llm.model.EnrichedFix;
+import com.rish.anneal.llm.model.LlmModel;
 import com.rish.anneal.llm.service.EmbeddingService;
 import com.rish.anneal.llm.service.FixEnrichmentService;
 import com.rish.anneal.store.repository.EmbeddingRepository;
@@ -128,10 +128,22 @@ public class ScanResource {
         ScanResult result = scanner.scan(repoPath, rules, source, target);
         repository.save(result);
 
-        // --- LLM enrichment ---
-        Map<String, EnrichedFix> enrichments = enrichmentService.enrichAll(result.getFindings(), ruleById);
-        log.infof("Enriched %d/%d findings for scan %s",
-                enrichments.size(), result.getFindings().size(), result.getScanId());
+        // --- LLM enrichment (async) ---
+        // Returns immediately — enrichment runs in the background.
+        // Persistence callback is provided here so anneal-llm stays store-free.
+        // Frontend polls GET /api/scans/{scanId} and sees explanations fill in progressively.
+        enrichmentService.enrichAllAsync(result.getFindings(), ruleById, fix -> {
+            String provider = switch (fix.model()) {
+                case LlmModel.Anthropic a -> "ANTHROPIC";
+                case LlmModel.Ollama o -> "OLLAMA";
+            };
+            repository.updateFindingEnrichment(
+                    fix.findingId(),
+                    fix.explanation(),
+                    provider,
+                    fix.model().modelName()
+            );
+        });
 
         // --- Embeddings ---
         // Embed each finding and persist to finding_embeddings for future similarity search.
@@ -161,7 +173,7 @@ public class ScanResource {
                 .toList();
 
         List<FindingDto> findingDtos = sortedFindings.stream()
-                .map(f -> ScanMapper.toFindingDto(f, enrichments.get(f.getFindingId())))
+                .map(f -> ScanMapper.toFindingDto(f, null))
                 .toList();
 
         // Build boundary scores
@@ -207,7 +219,9 @@ public class ScanResource {
 
     @GET
     @Path("/scans/{scanId}")
-    @Operation(summary = "Get scan by ID", description = "Returns a specific scan with all findings")
+    @Operation(summary = "Get scan by ID", description = "Returns a specific scan with all findings." +
+            "llmExplanation is populated as background enrichment completes — poll this endpoint."
+    )
     public Response getScan(@PathParam("scanId") String scanId) {
         return repository.findByScanId(scanId)
                 .map(entity -> {

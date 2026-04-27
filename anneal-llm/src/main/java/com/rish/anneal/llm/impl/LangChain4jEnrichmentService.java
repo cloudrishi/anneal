@@ -23,7 +23,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.*;
+import java.util.function.Consumer;
 
 /**
  * LangChain4j-backed implementation of {@link FixEnrichmentService}.
@@ -44,6 +45,17 @@ import java.util.concurrent.ConcurrentHashMap;
  * is more explicit, easier to test, and removes the AiService proxy indirection
  * for what is essentially a single-turn call.
  *
+ * <h2>Async enrichment</h2>
+ * {@link #enrichAllAsync} is the preferred scan path. It returns immediately and
+ * persists each enrichment result as it completes via
+ * {@code ScanResultRepository.updateFindingEnrichment()}. The frontend polls
+ * {@code GET /api/scans/{scanId}} and sees explanations fill in progressively.
+ *
+ * <h2>Dependency boundary</h2>
+ * {@code anneal-llm} depends only on {@code anneal-core}. It has no knowledge of
+ * {@code anneal-store} or {@code anneal-api}. Persistence is the caller's concern,
+ * injected via the {@code Consumer<EnrichedFix>} callback.
+ *
  * <h2>Failure isolation</h2>
  * Every enrichment call is wrapped in try/catch. A failure for one finding is
  * logged at WARN level and returns {@code Optional.empty()} — it never propagates
@@ -59,9 +71,10 @@ public class LangChain4jEnrichmentService implements FixEnrichmentService {
     @LoggerName("anneal.llm")
     Logger log;
 
+
     private ChatModel codeModel;
     private ChatModel proseModel;
-    private ChatModel cloudModel; // null when allow-cloud-fallback: false or key absent
+    private ChatModel cloudModel;
 
     @PostConstruct
     void init() {
@@ -75,8 +88,36 @@ public class LangChain4jEnrichmentService implements FixEnrichmentService {
                 cloudModel != null ? config.anthropic().model() : "disabled");
     }
 
-    // ─── FixEnrichmentService ─────────────────────────────────────────────────
-
+    /**
+     * Enriches a single finding with an LLM-generated explanation.
+     *
+     * <p>Selects the appropriate model based on finding severity and effort:
+     * <ul>
+     *   <li>MANUAL effort + cloud enabled → {@code claude-sonnet-4-6}</li>
+     *   <li>BREAKING severity → {@code codellama:13b}</li>
+     *   <li>DEPRECATED / MODERNIZATION → {@code llama3.1:8b}</li>
+     * </ul>
+     *
+     * <p>Version facts ({@code introducedIn}, {@code removedIn}, {@code effort}) from
+     * the {@code MigrationRule} are injected into the prompt as hard constraints via
+     * {@link FixPrompts#userMessage(Finding, MigrationRule)}. This prevents the model
+     * from substituting its own (potentially hallucinated) version knowledge.
+     *
+     * <p>The raw model response is passed through {@link FixPrompts#clean(String)} before
+     * returning — strips {@code [INST]}, {@code <<SYS>>}, and BOS/EOS artefacts produced
+     * by {@code codellama:13b}'s instruction-tuning format.
+     *
+     * <p>Failure-isolated — any exception (network, timeout, blank response) is caught,
+     * logged at WARN level, and returns {@code Optional.empty()}. The scan response
+     * is never affected by a single enrichment failure.
+     *
+     * @param finding the finding to enrich — provides ruleId, severity, originalCode
+     * @param rule    the rule that produced this finding — provides version facts for
+     *                prompt anchoring; must not be null
+     * @return an {@link EnrichedFix} with explanation and model attribution,
+     * or {@code Optional.empty()} on failure, blank response, or when
+     * enrichment is disabled via {@code anneal.llm.enrichment-enabled: false}
+     */
     @Override
     public Optional<EnrichedFix> enrich(Finding finding, MigrationRule rule) {
         if (!config.enrichmentEnabled()) return Optional.empty();
@@ -87,7 +128,7 @@ public class LangChain4jEnrichmentService implements FixEnrichmentService {
             String userMsg = FixPrompts.userMessage(finding, rule);
             String raw = callModel(selected.model(), systemPrompt, userMsg);
             String explanation = FixPrompts.clean(raw);
-            
+
             if (explanation.isBlank()) {
                 log.warnf("Blank explanation returned for finding %s (model: %s)",
                         finding.getFindingId(), selected.llmModel());
@@ -106,6 +147,22 @@ public class LangChain4jEnrichmentService implements FixEnrichmentService {
         }
     }
 
+    /**
+     * Enriches all findings in parallel using a fixed thread pool bounded by
+     * {@code enrichmentConcurrency}. Each finding is submitted as a
+     * {@code CompletableFuture} with a per-finding timeout equal to
+     * {@code timeoutSeconds}. Failures and timeouts are isolated — one bad
+     * call never blocks or fails the others.
+     *
+     * <p>Uses a fixed thread pool rather than virtual threads because
+     * {@code ChatModel.chat()} is a long-blocking call (5–30s) holding a thread
+     * for GPU processing time. Virtual threads offer no advantage here — the
+     * bottleneck is Ollama throughput, not thread scheduling.
+     *
+     * <p>Total wall-clock time approaches the slowest batch in the pool rather
+     * than the sum of all calls. Mixed-model scans (BREAKING + DEPRECATED findings)
+     * get the most benefit as codellama:13b and llama3.1:8b calls overlap.
+     */
     @Override
     public Map<String, EnrichedFix> enrichAll(
             List<Finding> findings,
@@ -117,20 +174,107 @@ public class LangChain4jEnrichmentService implements FixEnrichmentService {
         }
 
         Map<String, EnrichedFix> results = new ConcurrentHashMap<>();
+        int concurrency = config.enrichmentConcurrency();
 
-        for (Finding finding : findings) {
-            MigrationRule rule = ruleById.get(finding.getRuleId());
-            if (rule == null) {
-                log.warnf("No MigrationRule found for ruleId '%s' — skipping enrichment for finding %s",
-                        finding.getRuleId(), finding.getFindingId());
-                continue;
-            }
-            enrich(finding, rule).ifPresent(fix -> results.put(finding.getFindingId(), fix));
+        log.infof("Starting parallel enrichment — %d findings, concurrency: %d",
+                findings.size(), concurrency);
+
+        long start = System.currentTimeMillis();
+
+        try (ExecutorService executor = Executors.newFixedThreadPool(concurrency)) {
+
+            List<CompletableFuture<Void>> futures = findings.stream()
+                    .map(finding -> CompletableFuture
+                            .runAsync(() -> {
+                                MigrationRule rule = ruleById.get(finding.getRuleId());
+                                if (rule == null) {
+                                    log.warnf("No MigrationRule for ruleId '%s' — skipping finding %s",
+                                            finding.getRuleId(), finding.getFindingId());
+                                    return;
+                                }
+                                enrich(finding, rule).ifPresent(fix ->
+                                        results.put(finding.getFindingId(), fix));
+                            }, executor)
+                            .orTimeout(config.timeoutSeconds(), TimeUnit.SECONDS)
+                            .exceptionally(e -> {
+                                log.warnf("Enrichment timed out or failed for finding %s: %s",
+                                        finding.getFindingId(), e.getMessage());
+                                return null;
+                            }))
+                    .toList();
+
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
         }
 
-        log.infof("Enrichment complete — %d/%d findings enriched", results.size(), findings.size());
+        long elapsed = System.currentTimeMillis() - start;
+        log.infof("Enrichment complete — %d/%d findings enriched in %dms",
+                results.size(), findings.size(), elapsed);
 
         return Collections.unmodifiableMap(results);
+    }
+
+    /**
+     * Enriches all findings asynchronously, invoking {@code onEnriched} after each
+     * successful enrichment. Returns immediately — the scan response is not blocked.
+     *
+     * <p>The {@code onEnriched} callback is provided by the caller ({@code ScanResource})
+     * and is responsible for persistence. This keeps {@code anneal-llm} free of any
+     * dependency on {@code anneal-store}.
+     *
+     * <p>Uses the same fixed thread pool and per-finding timeout as {@link #enrichAll}.
+     * The executor is shut down automatically once all futures complete.
+     *
+     * @param findings   findings to enrich
+     * @param ruleById   map of ruleId → MigrationRule for version-fact injection
+     * @param onEnriched called after each successful enrichment — caller persists the result
+     */
+    @Override
+    public void enrichAllAsync(
+            List<Finding> findings,
+            Map<String, MigrationRule> ruleById,
+            Consumer<EnrichedFix> onEnriched
+    ) {
+        if (!config.enrichmentEnabled()) {
+            log.debug("LLM enrichment disabled — skipping async enrichment");
+            return;
+        }
+
+        int concurrency = config.enrichmentConcurrency();
+
+        log.infof("Starting async enrichment — %d findings, concurrency: %d",
+                findings.size(), concurrency);
+
+        ExecutorService executor = Executors.newFixedThreadPool(concurrency);
+
+        List<CompletableFuture<Void>> futures = findings.stream()
+                .map(finding -> CompletableFuture
+                        .runAsync(() -> {
+                            MigrationRule rule = ruleById.get(finding.getRuleId());
+                            if (rule == null) {
+                                log.warnf("No MigrationRule for ruleId '%s' — skipping finding %s",
+                                        finding.getRuleId(), finding.getFindingId());
+                                return;
+                            }
+                            enrich(finding, rule).ifPresent(fix -> {
+                                onEnriched.accept(fix);
+                                log.debugf("Async enriched finding %s via %s",
+                                        fix.findingId(), fix.model().modelName());
+                            });
+                        }, executor)
+                        .orTimeout(config.timeoutSeconds(), TimeUnit.SECONDS)
+                        .exceptionally(e -> {
+                            log.warnf("Async enrichment timed out or failed for finding %s: %s",
+                                    finding.getFindingId(), e.getMessage());
+                            return null;
+                        }))
+                .toList();
+
+        // Shut down executor once all futures complete — runs entirely in background
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                .whenComplete((v, e) -> {
+                    executor.shutdown();
+                    log.infof("Async enrichment complete for %d findings", findings.size());
+                });
     }
 
     // ─── Private helpers ──────────────────────────────────────────────────────

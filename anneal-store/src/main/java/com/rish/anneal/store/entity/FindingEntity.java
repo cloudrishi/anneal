@@ -74,6 +74,27 @@ public class FindingEntity extends PanacheEntity {
     @Column(name = "created_at", nullable = false)
     public Instant createdAt = Instant.now();
 
+    /**
+     * LLM-generated explanation for the fix. Null until background enrichment completes.
+     * Populated by {@code ScanResultRepository.updateFindingEnrichment()}.
+     */
+    @Column(name = "llm_explanation", columnDefinition = "TEXT")
+    public String llmExplanation;
+
+    /**
+     * Provider that produced the explanation — OLLAMA or ANTHROPIC.
+     * Null until background enrichment completes.
+     */
+    @Column(name = "llm_provider", length = 32)
+    public String llmProvider;
+
+    /**
+     * Model name as configured e.g. codellama:13b, claude-sonnet-4-6.
+     * Null until background enrichment completes.
+     */
+    @Column(name = "llm_model", length = 128)
+    public String llmModel;
+
     public static java.util.List<FindingEntity> findByScanId(String scanId) {
         return list("scanResult.scanId", scanId);
     }

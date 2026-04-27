@@ -185,10 +185,11 @@ public class ScanMapper {
                         f.originalCode, f.description, f.confidence,
                         f.affectsVersion, f.fixType, f.suggestedCode,
                         f.autoApplicable, f.status, f.referenceUrl,
-                        null, // llmExplanation not stored
-                        null, // llmProvider not stored
-                        null // llmModel not stored
-                ))
+                        f.llmExplanation,
+                        f.llmProvider != null
+                                ? com.rish.anneal.api.model.LlmProvider.valueOf(f.llmProvider)
+                                : null,
+                        f.llmModel))
                 .toList();
 
         return new com.rish.anneal.api.dto.ScanResponse(

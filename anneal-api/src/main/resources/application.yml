@@ -83,6 +83,9 @@ anneal:
       api-key: ${ANTHROPIC_API_KEY:}
       model: ${ANTHROPIC_MODEL:claude-sonnet-4-6}
     allow-cloud-fallback: ${ALLOW_CLOUD_FALLBACK:false}
+    enrichment-concurrency: 4   # must be here, not at root level
+    enrichment-enabled: true
+    timeout-seconds: 180
 
   scanner:
     max-file-size-kb: ${MAX_FILE_SIZE_KB:500}
@@ -96,7 +99,7 @@ anneal:
 "%dev":
   quarkus:
     log:
-      level: WARN
+      level: INFO
     hibernate-orm:
       log:
         sql: true
