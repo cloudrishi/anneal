@@ -1,7 +1,7 @@
 # anneal — Architecture & Design Record
 
 > Living document. Updated at every design decision.  
-> Last updated: April 26, 2026
+> Last updated: April 27, 2026
 
 ---
 
@@ -389,7 +389,8 @@ AiService proxies — per-finding system messages require call-level control tha
 selected per finding based on model role (`CODE_SYSTEM`, `PROSE_SYSTEM`, `CLOUD_SYSTEM`). `enrich()` wraps each LLM call
 in try/catch — failures return `Optional.empty()`, never throw. `enrichAll()` takes `Map<ruleId, MigrationRule>` so
 version facts can be injected as hard constraints into prompts. Returns `Map<findingId, EnrichedFix>` — only successful
-enrichments included.
+enrichments included. `enrichAllAsync()` fires immediately and invokes a `Consumer<EnrichedFix>` callback after each
+success — the callback (provided by `ScanResource`) persists the result. This keeps `anneal-llm` store-free.
 
 **`LlmModel`** — sealed interface with two permitted record implementations: `Ollama(String modelName)` and
 `Anthropic(String modelName)`. Carried on `EnrichedFix` so the provider and model name flow to the API response without
@@ -421,18 +422,24 @@ POST /api/scan
   -> validate path exists and is directory
   -> resolve source version (caller-specified or VersionDetector auto-detect)
   -> RuleRegistry.rulesFor(source, V25)
-  -> index rules by ruleId: Map<String, MigrationRule>        O(1) lookup in enrichAll()
+  -> index rules by ruleId: Map<String, MigrationRule>        O(1) lookup in enrichAllAsync()
   -> CodebaseScanner.scan()
   -> ScanResultRepository.save()
-  -> FixEnrichmentService.enrichAll(findings, ruleById)        LLM — failure-isolated per finding
+  -> FixEnrichmentService.enrichAllAsync(findings, ruleById, onEnriched)
+       returns immediately — background CompletableFuture + fixed thread pool (enrichmentConcurrency)
+       onEnriched callback (ScanResource) persists each result as it completes:
+         ScanResultRepository.updateFindingEnrichment(findingId, explanation, provider, model)
+       anneal-llm stays store-free — persistence is caller's concern via Consumer<EnrichedFix>
   -> for each finding:
        EmbeddingService.embed()                                ONNX — no network
        EmbeddingRepository.save()                              pgvector — try/catch, non-critical
-  -> build FindingDtos with EnrichedFix injected               ScanMapper.toFindingDto(finding, fix)
-       llmExplanation = fix.explanation()
-       llmProvider    = OLLAMA | ANTHROPIC (pattern-matched from fix.model())
-       llmModel       = fix.model().modelName()
-  -> 200 OK with ScanResponse
+  -> build FindingDtos with llmExplanation: null               enrichment not yet complete
+  -> 200 OK with ScanResponse                                  ~2s total
+
+  [background] enrichAllAsync processes findings in parallel
+    each EnrichedFix persisted via updateFindingEnrichment() as Ollama completes it
+    frontend polls GET /api/scans/{scanId} every NEXT_PUBLIC_POLL_INTERVAL_MS (default: 3000ms)
+    explanations fill in progressively — UI merges only LLM fields, preserves local status changes
 
 GET /api/scans
   -> ScanResultRepository.findAll()
@@ -908,6 +915,9 @@ Two jobs — `test` then `build`.
 | Cloud validation harness    | ✅ Complete — CloudModelValidationIT opt-in, gated by ANTHROPIC_API_KEY         |
 | llms.txt                    | ✅ Complete — checked in at repo root                                           |
 | Finding status PATCH        | ✅ Complete — PATCH endpoint, wait-for-confirmation UI, error display           |
+| Async LLM enrichment        | ✅ Complete — enrichAllAsync, Consumer callback, progressive UI fill-in         |
+| LLM columns persisted       | ✅ Complete — V5 migration, updateFindingEnrichment, history shows explanations |
+| Parallel enrichment         | ✅ Complete — CompletableFuture, configurable concurrency, per-finding timeout  |
 | History view                | 🔲 Pending — list past scans in UI                                             |
 | README                      | 🔲 Pending                                                                     |
 
@@ -958,11 +968,19 @@ Two jobs — `test` then `build`.
 | 2026-04-26 | Loading state on clicked button only                 | Other buttons disabled during flight — prevents double-action|
 | 2026-04-26 | Error displayed inline, buttons stay active          | Developer retries without losing context                    |
 | 2026-04-26 | PATCH added to CORS allowed methods                  | Frontend on :3000 blocked without it                        |
+| 2026-04-27 | `enrichAllAsync()` with `Consumer<EnrichedFix>`      | anneal-llm stays store-free — persistence is caller's concern|
+| 2026-04-27 | Async enrichment over blocking enrichAll() in scan   | Scan returns in ~2s; explanations fill in progressively     |
+| 2026-04-27 | V5 migration — LLM columns on findings               | Explanations persisted — history view shows them            |
+| 2026-04-27 | CompletableFuture over raw Future                    | orTimeout per finding, cleaner error handling               |
+| 2026-04-27 | Fixed thread pool over virtual threads               | GPU-bound workload — virtual threads offer no advantage     |
+| 2026-04-27 | Concurrency 4, timeout 180s for M1 Pro               | 3 worse (no overlap), 5 worse (context switching); 4 optimal|
+| 2026-04-27 | `NEXT_PUBLIC_POLL_INTERVAL_MS` env var               | Poll interval configurable without code change              |
+| 2026-04-27 | Poll merges only LLM fields, not full replace        | Preserves local accept/reject/defer state during enrichment |
 
 ---
 
 ## open questions
 
-- History view — list past scans in UI with persisted status
+- History view — list past scans in UI with persisted status and explanations
 - Cloud model validation output — run `CloudModelValidationIT` and evaluate prose quality delta
 - README

@@ -96,14 +96,17 @@ POST /api/scan
 
 ```
 anneal-core     Pure Java — rule engine, AST scanner, risk calculator. Zero framework deps.
-anneal-llm      LangChain4j — fix enrichment (codellama:13b), ONNX embeddings (MiniLM 384-dim)
+anneal-llm      LangChain4j — async fix enrichment (codellama:13b), ONNX embeddings (MiniLM 384-dim)
 anneal-store    Quarkus + Panache — PostgreSQL persistence, pgvector similarity search
-anneal-api      Quarkus REST — 4 endpoints, CDI wiring, scan orchestration
+anneal-api      Quarkus REST — 5 endpoints, CDI wiring, scan orchestration
 anneal-ui       Next.js 15 — brutalist dark UI, IBM Plex Mono, molten orange
 ```
 
 **Detection is deterministic.** The rule engine uses JavaParser AST traversal — it either finds `import sun.misc.Unsafe`
 or it doesn't. No LLM involved in detection. LLM only enriches the explanation of what was found and why it matters.
+
+**Scan returns in ~2 seconds.** LLM enrichment runs in the background via a parallel `CompletableFuture` pool.
+Findings appear immediately in the UI — explanations fill in progressively as Ollama processes them.
 
 **Local-first.** Ollama runs on your machine. `codellama:13b` for code reasoning, `llama3.1:8b` for prose.
 `claude-sonnet-4-6` via Anthropic is available as an opt-in for complex refactors — disabled by default.
@@ -214,6 +217,15 @@ anneal:
       model: claude-sonnet-4-6
     allow-cloud-fallback: false          # set true to enable Anthropic for MANUAL findings
     enrichment-enabled: true             # set false for fast offline scans
+    enrichment-concurrency: 4            # parallel LLM calls — tune for your hardware
+    timeout-seconds: 180                 # per-finding LLM timeout
+```
+
+Frontend settings in `anneal-ui/.env.local`:
+
+```
+NEXT_PUBLIC_API_URL=http://localhost:8080
+NEXT_PUBLIC_POLL_INTERVAL_MS=3000        # how often to poll for enrichment updates
 ```
 
 ---
