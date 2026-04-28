@@ -111,6 +111,11 @@ Findings appear immediately in the UI — explanations fill in progressively as 
 **Local-first.** Ollama runs on your machine. `codellama:13b` for code reasoning, `llama3.1:8b` for prose.
 `claude-sonnet-4-6` via Anthropic is available as an opt-in for complex refactors — disabled by default.
 
+**Three-tier LLM routing.** Model selection is automatic based on finding effort and severity:
+- `MANUAL` effort → `claude-sonnet-4-6` — architectural decisions with no safe drop-in replacement
+- `BREAKING` severity → `codellama:13b` — JVM internals and API removal patterns
+- `DEPRECATED` / `MODERNIZATION` → `llama3.1:8b` — natural language prose explanations
+
 **Per-boundary risk scores.** Not one aggregate number — a score per LTS boundary crossing so you know exactly which
 step is the most dangerous.
 
@@ -246,11 +251,12 @@ services.
 To validate `claude-sonnet-4-6` explanation quality against the test-legacy fixture:
 
 ```bash
-ANTHROPIC_API_KEY=sk-ant-... ./gradlew :anneal-llm:test --tests "*CloudModelValidationIT" --info
+export ANTHROPIC_API_KEY=sk-ant-...
+./gradlew --stop
+./gradlew :anneal-api:test --tests "*CloudModelValidationIT" --info
 ```
 
-This test is opt-in — skipped automatically when `ANTHROPIC_API_KEY` is not set. It prints explanations from both
-local and cloud models side-by-side for manual review.
+This test is opt-in — the `anneal-llm` test task is disabled unless `ANTHROPIC_API_KEY` is set. It prints side-by-side explanations from local and cloud models for manual review. Cost: ~$0.03 per run.
 
 ---
 

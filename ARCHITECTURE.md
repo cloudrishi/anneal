@@ -923,7 +923,21 @@ Two jobs — `test` then `build`.
 | LLM columns persisted       | ✅ Complete — V5 migration, updateFindingEnrichment, history shows explanations |
 | Parallel enrichment         | ✅ Complete — CompletableFuture, configurable concurrency, per-finding timeout  |
 | History view                | ✅ Complete — scan/history tab switcher, past scan list, load into scan tab     |
-| README                      | 🔲 Pending                                                                     |
+| Cloud model validation      | ✅ Complete — claude-sonnet-4-6 validated against test-legacy fixture           |
+| JPMS_UNSAFE_USAGE effort    | ✅ Complete — corrected to MANUAL, routes to claude-sonnet-4-6                 |
+| README                      | ✅ Complete                                                                     |
+
+### roadmap
+
+| Feature                | Priority | Description                                                                      |
+|------------------------|----------|----------------------------------------------------------------------------------|
+| Scan progress streaming | 1        | SSE endpoint — stream file-by-file progress to UI during large scans            |
+| Rule suppression        | 2        | `@SuppressAnneal` annotation in source — scanner respects per-finding overrides  |
+| Auto-apply with diff    | 3        | Write `autoApplicable: true` fixes to disk with diff preview and rollback        |
+| Similarity search UI    | 4        | Surface pgvector similarity on FindingCard — "similar findings from past scans"  |
+| Risk trend              | 5        | Sparkline across scans on history tab — track migration progress over time       |
+| CI integration          | 6        | Gradle plugin — fail build if risk score exceeds configurable threshold          |
+| Multi-repo scanning     | 7        | Scan entire org in one pass, aggregate risk scores across services               |
 
 ---
 
@@ -980,10 +994,14 @@ Two jobs — `test` then `build`.
 | 2026-04-27 | Concurrency 4, timeout 180s for M1 Pro               | 3 worse (no overlap), 5 worse (context switching); 4 optimal|
 | 2026-04-27 | `NEXT_PUBLIC_POLL_INTERVAL_MS` env var               | Poll interval configurable without code change              |
 | 2026-04-27 | Poll merges only LLM fields, not full replace        | Preserves local accept/reject/defer state during enrichment |
+| 2026-04-27 | History view as tab, not separate page               | Single-page brutalist aesthetic — tab switcher fits design  |
+| 2026-04-27 | `JPMS_UNSAFE_USAGE` effort corrected to MANUAL       | No safe drop-in replacement — requires architectural decisions |
+| 2026-04-27 | `DEPRECATION_SECURITY_MANAGER` already MANUAL        | No in-process replacement — OS-level sandboxing required    |
+| 2026-04-27 | Cloud validation run — quality delta confirmed       | claude-sonnet-4-6 produces senior-engineer quality on MANUAL findings |
+| 2026-04-27 | `CloudModelValidationIT` moved to anneal-api         | anneal-llm lacks full Quarkus test infrastructure           |
 
 ---
 
 ## open questions
 
-- Cloud model validation output — run `CloudModelValidationIT` and evaluate prose quality delta between codellama and claude-sonnet-4-6
-- README
+- None — all planned features are in the roadmap above.
