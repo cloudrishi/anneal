@@ -105,8 +105,9 @@ anneal-ui       Next.js 15 — brutalist dark UI, IBM Plex Mono, molten orange
 **Detection is deterministic.** The rule engine uses JavaParser AST traversal — it either finds `import sun.misc.Unsafe`
 or it doesn't. No LLM involved in detection. LLM only enriches the explanation of what was found and why it matters.
 
-**Scan returns in ~2 seconds.** LLM enrichment runs in the background via a parallel `CompletableFuture` pool.
-Findings appear immediately in the UI — explanations fill in progressively as Ollama processes them.
+**Scan progress streaming.** The UI uses `GET /api/scan/stream` (Server-Sent Events) — a live progress bar shows `scanning… 47/259 (18%) — FieldUtils.java` as each file is processed. `POST /api/scan` stays unchanged for curl and programmatic access.
+
+**Findings appear immediately.** LLM enrichment runs in the background via a parallel `CompletableFuture` pool. Explanations fill in progressively as Ollama processes them — the UI polls every 3 seconds and merges results without losing local status changes.
 
 **Local-first.** Ollama runs on your machine. `codellama:13b` for code reasoning, `llama3.1:8b` for prose.
 `claude-sonnet-4-6` via Anthropic is available as an opt-in for complex refactors — disabled by default.
@@ -279,6 +280,7 @@ This test is opt-in — the `anneal-llm` test task is disabled unless `ANTHROPIC
 |---------|--------------------------------------------------|-----------------------------------|
 | `GET`   | `/api/health`                                    | Liveness check                    |
 | `POST`  | `/api/scan`                                      | Scan a repository                 |
+| `GET`   | `/api/scan/stream`                               | Stream scan progress via SSE      |
 | `GET`   | `/api/scans`                                     | List all past scans               |
 | `GET`   | `/api/scans/{scanId}`                            | Get a specific scan with findings |
 | `PATCH` | `/api/scans/{scanId}/findings/{findingId}`       | Update finding status             |

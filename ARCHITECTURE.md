@@ -1,7 +1,7 @@
 # anneal — Architecture & Design Record
 
 > Living document. Updated at every design decision.  
-> Last updated: April 27, 2026
+> Last updated: April 28, 2026
 
 ---
 
@@ -456,6 +456,15 @@ PATCH /api/scans/{scanId}/findings/{findingId}
   -> validate status — ACCEPTED | REJECTED | DEFERRED (400 on invalid)
   -> ScanResultRepository.updateFindingStatus(scanId, findingId, status)
   -> 200 OK with {findingId, status} | 404 if not found
+
+GET /api/scan/stream?repoPath=...&sourceVersion=8
+  -> validate path and version (400 on invalid, SSE ERROR event)
+  -> open SSE connection (text/event-stream)
+  -> run CodebaseScanner on virtual thread with progress callback
+       each file emits FILE event: {type, file, filesScanned, totalFiles, findingCount}
+  -> on completion: persist result, fire enrichAllAsync, emit DONE event with scanId + scores
+  -> frontend fetches GET /api/scans/{scanId} for full findings after DONE
+  -> UI shows live progress bar + filename counter during scan
 ```
 
 ### configuration
@@ -926,18 +935,19 @@ Two jobs — `test` then `build`.
 | Cloud model validation      | ✅ Complete — claude-sonnet-4-6 validated against test-legacy fixture           |
 | JPMS_UNSAFE_USAGE effort    | ✅ Complete — corrected to MANUAL, routes to claude-sonnet-4-6                 |
 | README                      | ✅ Complete                                                                     |
+| Scan progress streaming     | ✅ Complete — SSE endpoint, virtual thread, live progress bar + filename in UI  |
 
 ### roadmap
 
 | Feature                | Priority | Description                                                                      |
 |------------------------|----------|----------------------------------------------------------------------------------|
-| Scan progress streaming | 1        | SSE endpoint — stream file-by-file progress to UI during large scans            |
-| Rule suppression        | 2        | `@SuppressAnneal` annotation in source — scanner respects per-finding overrides  |
-| Auto-apply with diff    | 3        | Write `autoApplicable: true` fixes to disk with diff preview and rollback        |
-| Similarity search UI    | 4        | Surface pgvector similarity on FindingCard — "similar findings from past scans"  |
-| Risk trend              | 5        | Sparkline across scans on history tab — track migration progress over time       |
-| CI integration          | 6        | Gradle plugin — fail build if risk score exceeds configurable threshold          |
-| Multi-repo scanning     | 7        | Scan entire org in one pass, aggregate risk scores across services               |
+| Scan progress streaming | ~~1~~    | ✅ Done — SSE endpoint, virtual thread, live progress bar                        |
+| Rule suppression        | 1        | `@SuppressAnneal` annotation in source — scanner respects per-finding overrides  |
+| Auto-apply with diff    | 2        | Write `autoApplicable: true` fixes to disk with diff preview and rollback        |
+| Similarity search UI    | 3        | Surface pgvector similarity on FindingCard — "similar findings from past scans"  |
+| Risk trend              | 4        | Sparkline across scans on history tab — track migration progress over time       |
+| CI integration          | 5        | Gradle plugin — fail build if risk score exceeds configurable threshold          |
+| Multi-repo scanning     | 6        | Scan entire org in one pass, aggregate risk scores across services               |
 
 ---
 
@@ -999,6 +1009,12 @@ Two jobs — `test` then `build`.
 | 2026-04-27 | `DEPRECATION_SECURITY_MANAGER` already MANUAL        | No in-process replacement — OS-level sandboxing required    |
 | 2026-04-27 | Cloud validation run — quality delta confirmed       | claude-sonnet-4-6 produces senior-engineer quality on MANUAL findings |
 | 2026-04-27 | `CloudModelValidationIT` moved to anneal-api         | anneal-llm lacks full Quarkus test infrastructure           |
+| 2026-04-28 | SSE over WebSocket for scan progress                 | SSE is unidirectional, simpler, native EventSource in browser |
+| 2026-04-28 | GET /api/scan/stream separate from POST /api/scan    | EventSource requires GET — existing POST contract unchanged |
+| 2026-04-28 | BlockingQueue bridges scanner thread to Mutiny stream| Clean handoff — scanner is sync, SSE stream is reactive     |
+| 2026-04-28 | Virtual thread for scan execution                    | Blocking scanner doesn't tie up event loop thread           |
+| 2026-04-28 | ScanPanel uses EventSource, fetches full result after DONE | DONE event carries scanId — full findings via GET /api/scans/{scanId} |
+| 2026-04-28 | Progress callback Consumer on CodebaseScanner        | No-op overload — zero breaking changes to existing callers  |
 
 ---
 

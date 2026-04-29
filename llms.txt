@@ -33,10 +33,25 @@ anneal/
   constraints into prompts to prevent model hallucination of Java version numbers.
 - Local-first. Default provider is Ollama (codellama:13b for BREAKING findings, llama3.1:8b
   for prose). Anthropic (claude-sonnet-4-6) is opt-in via `allow-cloud-fallback: true`.
+- MANUAL effort findings route to claude-sonnet-4-6 — these require architectural decisions
+  with no safe drop-in replacement (e.g. sun.misc.Unsafe, SecurityManager removal).
 - Code never leaves the machine unless `allow-cloud-fallback: true` is explicitly set.
 - Rules are Java classes, not database rows — testable, version-controlled, PR-reviewable.
 - `autoApplicable: false` findings are never applied without developer approval.
-- `llmExplanation` is not persisted — runtime enrichment only; history returns null honestly.
+- Scan returns in ~2s — findings appear immediately, LLM explanations fill in progressively.
+- SSE streaming (GET /api/scan/stream) shows live file-by-file progress during large scans.
+- llmExplanation, llmProvider, llmModel persisted to DB — history view shows explanations.
+- Finding status (ACCEPTED/REJECTED/DEFERRED) persisted via PATCH endpoint.
+
+## Roadmap
+
+Next features in priority order:
+1. Rule suppression — @SuppressAnneal annotation respected by scanner
+2. Auto-apply with diff — write autoApplicable fixes to disk with preview and rollback
+3. Similarity search UI — surface pgvector results on FindingCard
+4. Risk trend — sparkline across scans on history tab
+5. CI integration — Gradle plugin, risk score threshold gate
+6. Multi-repo scanning — org-wide aggregate risk scores
 
 ## Migration path
 
@@ -78,15 +93,20 @@ HIGH / MANUAL), `introducedIn` (JavaVersion), `removedIn` (JavaVersion, nullable
 
 ## REST API
 
-| Method | Path                 | Description                                    |
-|--------|----------------------|------------------------------------------------|
-| GET    | /api/health          | Liveness                                       |
-| POST   | /api/scan            | Scan repo — returns findings + LLM explanation |
-| GET    | /api/scans           | List past scans (summary, no findings)         |
-| GET    | /api/scans/{scanId}  | Full scan — llmExplanation is null on history  |
+| Method | Path                                       | Description                                    |
+|--------|--------------------------------------------|------------------------------------------------|
+| GET    | /api/health                                | Liveness                                       |
+| POST   | /api/scan                                  | Scan repo — returns findings + LLM explanation |
+| GET    | /api/scan/stream?repoPath=...&sourceVersion=8 | SSE — streams file-by-file scan progress    |
+| GET    | /api/scans                                 | List past scans (summary, no findings)         |
+| GET    | /api/scans/{scanId}                        | Full scan — llmExplanation populated async     |
+| PATCH  | /api/scans/{scanId}/findings/{findingId}   | Update finding status — ACCEPTED/REJECTED/DEFERRED |
 
 POST /api/scan flow: version detection → rule filtering → AST scan → persist →
-LLM enrichment (failure-isolated per finding) → ONNX embed → pgvector store → response.
+LLM enrichment async (failure-isolated per finding) → ONNX embed → pgvector store → response.
+
+GET /api/scan/stream flow: SSE connection → scan on virtual thread → FILE events per file →
+DONE event with scanId → frontend fetches full result → enrichment polls fill in explanations.
 
 ## LLM layer
 
