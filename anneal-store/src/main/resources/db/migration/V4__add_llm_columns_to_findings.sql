@@ -1,4 +1,4 @@
--- V5 — Add LLM enrichment columns to findings
+-- V4 — Add LLM enrichment columns to findings
 --
 -- llm_explanation, llm_provider, llm_model are runtime-enriched after scan completes.
 -- All nullable — existing rows retain NULL, background enrichment populates them

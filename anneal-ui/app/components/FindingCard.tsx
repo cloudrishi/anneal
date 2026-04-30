@@ -7,7 +7,7 @@ import {useState} from 'react';
 type Severity = 'BREAKING' | 'DEPRECATED' | 'MODERNIZATION';
 type Effort = 'TRIVIAL' | 'LOW' | 'MEDIUM' | 'HIGH' | 'MANUAL';
 type FixType = 'IMPORT_REPLACE' | 'API_REPLACE' | 'REFACTOR' | 'ADD_DEPENDENCY' | 'MODULE_INFO' | 'MANUAL';
-type FindingStatus = 'OPEN' | 'ACCEPTED' | 'REJECTED' | 'DEFERRED';
+type FindingStatus = 'OPEN' | 'ACCEPTED' | 'REJECTED' | 'DEFERRED' | 'SUPPRESSED';
 
 interface FindingDto {
     findingId: string;
@@ -56,6 +56,7 @@ const STATUS_STYLES: Record<FindingStatus, { border: string; label: string }> = 
     ACCEPTED: {border: 'var(--success)', label: '✓ accepted'},
     REJECTED: {border: 'var(--breaking)', label: '✗ rejected'},
     DEFERRED: {border: 'var(--warning)', label: '~ deferred'},
+    SUPPRESSED: {border: 'var(--muted)', label: '○ suppressed'},
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────

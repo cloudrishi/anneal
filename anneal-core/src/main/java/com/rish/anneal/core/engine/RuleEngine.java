@@ -2,10 +2,12 @@ package com.rish.anneal.core.engine;
 
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.ImportDeclaration;
+import com.github.javaparser.ast.Node;
+import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.ConstructorDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
-import com.github.javaparser.ast.expr.AnnotationExpr;
-import com.github.javaparser.ast.expr.MethodCallExpr;
-import com.github.javaparser.ast.expr.ObjectCreationExpr;
+import com.github.javaparser.ast.expr.*;
+import com.github.javaparser.ast.nodeTypes.NodeWithAnnotations;
 import com.rish.anneal.core.model.DetectionPattern;
 import com.rish.anneal.core.model.Finding;
 import com.rish.anneal.core.model.JavaVersion;
@@ -13,16 +15,32 @@ import com.rish.anneal.core.rule.MigrationRule;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
  * Applies a set of migration rules to a parsed Java CompilationUnit.
  * Returns a list of findings — one per matched pattern per rule.
- * <p>
- * Stateless — safe to use concurrently across multiple files.
+ *
+ * <p>Stateless — safe to use concurrently across multiple files.
  * Detection is fully deterministic — no LLM involvement.
+ *
+ * <h2>Suppression</h2>
+ * If the matched AST node is enclosed by a method, constructor, or type
+ * annotated with {@code @SuppressAnneal}, the finding is recorded with
+ * {@code status: SUPPRESSED} rather than {@code OPEN}. Suppressed findings
+ * are excluded from the risk score but remain visible in the report —
+ * the decision is auditable.
+ *
+ * <p>Suppression scope (checked in order):
+ * <ol>
+ *   <li>Enclosing method or constructor of the matched node</li>
+ *   <li>Enclosing type (class or interface)</li>
+ * </ol>
  */
 public class RuleEngine {
+
+    private static final String SUPPRESS_ANNOTATION = "SuppressAnneal";
 
     /**
      * Applies all provided rules to the given CompilationUnit.
@@ -87,9 +105,15 @@ public class RuleEngine {
                     : importName.equals(matcher);
 
             if (matches) {
+                // For imports, check the enclosing type (imports are file-level)
+                Finding.FindingStatus status = isSuppressedAtTypeLevel(cu, rule.getRuleId())
+                        ? Finding.FindingStatus.SUPPRESSED
+                        : Finding.FindingStatus.OPEN;
+
                 findings.add(buildFinding(rule, pattern, filePath,
                         imp.getBegin().map(p -> p.line).orElse(0),
-                        "import " + importName + ";"));
+                        "import " + importName + ";",
+                        status));
             }
         }
         return findings;
@@ -106,9 +130,12 @@ public class RuleEngine {
 
         cu.findAll(MethodCallExpr.class).forEach(call -> {
             if (call.getNameAsString().equals(methodName)) {
+                Finding.FindingStatus status = isSuppressed(call, rule.getRuleId())
+                        ? Finding.FindingStatus.SUPPRESSED
+                        : Finding.FindingStatus.OPEN;
                 findings.add(buildFinding(rule, pattern, filePath,
                         call.getBegin().map(p -> p.line).orElse(0),
-                        call.toString()));
+                        call.toString(), status));
             }
         });
         return findings;
@@ -127,9 +154,12 @@ public class RuleEngine {
         if ("MethodDeclaration".equals(pattern.getNodeType())) {
             cu.findAll(MethodDeclaration.class).forEach(method -> {
                 if (method.getNameAsString().equals(matcher)) {
+                    Finding.FindingStatus status = isSuppressed(method, rule.getRuleId())
+                            ? Finding.FindingStatus.SUPPRESSED
+                            : Finding.FindingStatus.OPEN;
                     findings.add(buildFinding(rule, pattern, filePath,
                             method.getBegin().map(p -> p.line).orElse(0),
-                            method.getDeclarationAsString()));
+                            method.getDeclarationAsString(), status));
                 }
             });
         }
@@ -138,9 +168,12 @@ public class RuleEngine {
         if ("ObjectCreationExpr".equals(pattern.getNodeType())) {
             cu.findAll(ObjectCreationExpr.class).forEach(expr -> {
                 if (expr.getTypeAsString().contains(matcher.replace("new ", ""))) {
+                    Finding.FindingStatus status = isSuppressed(expr, rule.getRuleId())
+                            ? Finding.FindingStatus.SUPPRESSED
+                            : Finding.FindingStatus.OPEN;
                     findings.add(buildFinding(rule, pattern, filePath,
                             expr.getBegin().map(p -> p.line).orElse(0),
-                            expr.toString()));
+                            expr.toString(), status));
                 }
             });
         }
@@ -158,9 +191,12 @@ public class RuleEngine {
 
         cu.findAll(MethodCallExpr.class).forEach(call -> {
             if (call.getNameAsString().equals(pattern.getMatcher())) {
+                Finding.FindingStatus status = isSuppressed(call, rule.getRuleId())
+                        ? Finding.FindingStatus.SUPPRESSED
+                        : Finding.FindingStatus.OPEN;
                 findings.add(buildFinding(rule, pattern, filePath,
                         call.getBegin().map(p -> p.line).orElse(0),
-                        call.toString()));
+                        call.toString(), status));
             }
         });
         return findings;
@@ -196,21 +232,116 @@ public class RuleEngine {
             String name = annotation.getNameAsString();
             // Match simple name OR trailing segment of FQN usage in source
             if (name.equals(simpleName) || name.equals(matcher) || name.endsWith("." + simpleName)) {
+                Finding.FindingStatus status = isSuppressed(annotation, rule.getRuleId())
+                        ? Finding.FindingStatus.SUPPRESSED
+                        : Finding.FindingStatus.OPEN;
                 findings.add(buildFinding(rule, pattern, filePath,
                         annotation.getBegin().map(p -> p.line).orElse(0),
-                        "@" + name));
+                        "@" + name, status));
             }
         });
         return findings;
     }
 
-    // --- Finding builder ---
+    // ─── Suppression check ────────────────────────────────────────────────────
+
+    /**
+     * Returns true if the matched node is enclosed by a method, constructor,
+     * or type annotated with {@code @SuppressAnneal} covering the given ruleId.
+     *
+     * <p>Walk order:
+     * <ol>
+     *   <li>Enclosing MethodDeclaration or ConstructorDeclaration</li>
+     *   <li>Enclosing ClassOrInterfaceDeclaration</li>
+     * </ol>
+     */
+    private boolean isSuppressed(Node node, String ruleId) {
+        // Check enclosing method or constructor first
+        Optional<Node> enclosingMethod = node.findAncestor(
+                n -> n instanceof MethodDeclaration || n instanceof ConstructorDeclaration);
+
+        if (enclosingMethod.isPresent() && enclosingMethod.get() instanceof NodeWithAnnotations<?> nwa) {
+            if (hasSuppressAnnotation(nwa, ruleId)) return true;
+        }
+
+        // Then check enclosing type
+        return node.findAncestor(ClassOrInterfaceDeclaration.class)
+                .map(cls -> hasSuppressAnnotation(cls, ruleId))
+                .orElse(false);
+    }
+
+    /**
+     * For import-level findings, only the type-level annotation applies
+     * since imports are not inside any method.
+     */
+    private boolean isSuppressedAtTypeLevel(CompilationUnit cu, String ruleId) {
+        return cu.findAll(ClassOrInterfaceDeclaration.class).stream()
+                .anyMatch(cls -> hasSuppressAnnotation(cls, ruleId));
+    }
+
+    /**
+     * Returns true if the node has {@code @SuppressAnneal} with no value
+     * (suppress all) or with a value array that contains the given ruleId.
+     */
+    private boolean hasSuppressAnnotation(NodeWithAnnotations<?> node, String ruleId) {
+        return node.getAnnotations().stream()
+                .filter(a -> a.getNameAsString().equals(SUPPRESS_ANNOTATION))
+                .anyMatch(a -> suppressesRule(a, ruleId));
+    }
+
+    /**
+     * Returns true if the annotation suppresses the given ruleId.
+     *
+     * <p>Three forms supported:
+     * <ul>
+     *   <li>{@code @SuppressAnneal} — no value, suppresses all rules</li>
+     *   <li>{@code @SuppressAnneal("RULE_ID")} — single string value</li>
+     *   <li>{@code @SuppressAnneal({"RULE_A", "RULE_B"})} — array value</li>
+     * </ul>
+     */
+    private boolean suppressesRule(AnnotationExpr annotation, String ruleId) {
+        // @SuppressAnneal with no value — suppress all
+        if (!annotation.isSingleMemberAnnotationExpr() &&
+                !annotation.isNormalAnnotationExpr()) {
+            return true;
+        }
+
+        // Extract the value expression
+        var valueOpt = annotation.isSingleMemberAnnotationExpr()
+                ? Optional.of(annotation.asSingleMemberAnnotationExpr().getMemberValue())
+                : annotation.asNormalAnnotationExpr().getPairs().stream()
+                .filter(p -> p.getNameAsString().equals("value"))
+                .map(p -> p.getValue())
+                .findFirst();
+
+        if (valueOpt.isEmpty()) return true; // no value = suppress all
+
+        var value = valueOpt.get();
+
+        // Single string: @SuppressAnneal("RULE_ID")
+        if (value instanceof StringLiteralExpr str) {
+            return str.asString().equals(ruleId);
+        }
+
+        // Array: @SuppressAnneal({"RULE_A", "RULE_B"})
+        if (value instanceof ArrayInitializerExpr arr) {
+            return arr.getValues().stream()
+                    .filter(v -> v instanceof StringLiteralExpr)
+                    .map(v -> ((StringLiteralExpr) v).asString())
+                    .anyMatch(s -> s.equals(ruleId));
+        }
+
+        return false;
+    }
+
+    // ─── Finding builder ──────────────────────────────────────────────────────
 
     private Finding buildFinding(MigrationRule rule,
                                  DetectionPattern pattern,
                                  String filePath,
                                  int lineNumber,
-                                 String originalCode) {
+                                 String originalCode,
+                                 Finding.FindingStatus status) {
         return Finding.builder()
                 .findingId(UUID.randomUUID().toString())
                 .ruleId(rule.getRuleId())
@@ -225,7 +356,8 @@ public class RuleEngine {
                 .confidence(pattern.getConfidence())
                 .affectsVersion(rule.getIntroducedIn())
                 .fixSuggestion(rule.getFixTemplate())
-                .referenceUrl(rule.getReferenceUrl())   // denormalized here — mapper stays stateless
+                .referenceUrl(rule.getReferenceUrl())
+                .status(status)
                 .build();
     }
 

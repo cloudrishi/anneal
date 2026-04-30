@@ -9,18 +9,18 @@ import java.util.List;
 
 /**
  * Calculates an aggregate risk score for a set of findings.
- *
+ * <p>
  * Score formula per finding:
- *   findingScore = severityWeight × confidence × effortMultiplier
- *
+ * findingScore = severityWeight × confidence × effortMultiplier
+ * <p>
  * Aggregate score is the sum of all finding scores, capped at 100.
- *
+ * <p>
  * Risk bands:
- *   0–20   LOW      — mostly modernization, no blockers
- *   21–50  MEDIUM   — some deprecated APIs, addressable
- *   51–80  HIGH     — multiple breaking changes, plan carefully
- *   81–100 CRITICAL — JPMS violations or mass API removals
- *
+ * 0–20   LOW      — mostly modernization, no blockers
+ * 21–50  MEDIUM   — some deprecated APIs, addressable
+ * 51–80  HIGH     — multiple breaking changes, plan carefully
+ * 81–100 CRITICAL — JPMS violations or mass API removals
+ * <p>
  * Stateless and deterministic — no LLM involvement.
  */
 public class RiskScoreCalculator {
@@ -42,7 +42,10 @@ public class RiskScoreCalculator {
             return 0;
         }
 
-        double raw = findings.stream()
+        List<Finding> scoreable = findings.stream()
+                .filter(f -> f.getStatus() != Finding.FindingStatus.SUPPRESSED)
+                .toList();
+        double raw = scoreable.stream()
                 .mapToDouble(this::findingScore)
                 .sum();
 
@@ -90,22 +93,25 @@ public class RiskScoreCalculator {
      * Calculates risk scores broken down by version boundary.
      * More actionable than a single aggregate — tells the developer
      * which boundary to tackle first.
-     *
+     * <p>
      * Example output:
-     *   8  → 11:  52 / HIGH     (JPMS violations, API removals)
-     *   11 → 17:  18 / LOW      (SecurityManager usage)
-     *   17 → 21:   3 / LOW      (finalize override)
-     *   21 → 25:   0 / LOW      (modernization only)
+     * 8  → 11:  52 / HIGH     (JPMS violations, API removals)
+     * 11 → 17:  18 / LOW      (SecurityManager usage)
+     * 17 → 21:   3 / LOW      (finalize override)
+     * 21 → 25:   0 / LOW      (modernization only)
      *
      * @param findings all findings from the scan
      * @return list of boundary scores in version order
      */
     public List<BoundaryScore> calculatePerBoundary(List<Finding> findings) {
+        List<Finding> scoreable = findings.stream()
+                .filter(f -> f.getStatus() != Finding.FindingStatus.SUPPRESSED)
+                .toList();
         return List.of(
-                boundaryScore(findings, JavaVersion.V8,  JavaVersion.V11),
-                boundaryScore(findings, JavaVersion.V11, JavaVersion.V17),
-                boundaryScore(findings, JavaVersion.V17, JavaVersion.V21),
-                boundaryScore(findings, JavaVersion.V21, JavaVersion.V25)
+                boundaryScore(scoreable, JavaVersion.V8, JavaVersion.V11),
+                boundaryScore(scoreable, JavaVersion.V11, JavaVersion.V17),
+                boundaryScore(scoreable, JavaVersion.V17, JavaVersion.V21),
+                boundaryScore(scoreable, JavaVersion.V21, JavaVersion.V25)
         );
     }
 
@@ -125,10 +131,10 @@ public class RiskScoreCalculator {
     /**
      * Risk score for a single version boundary.
      *
-     * @param from       source version
-     * @param to         target version
-     * @param score      aggregate risk score 0–100
-     * @param band       risk band label
+     * @param from         source version
+     * @param to           target version
+     * @param score        aggregate risk score 0–100
+     * @param band         risk band label
      * @param findingCount number of findings in this boundary
      */
     public record BoundaryScore(

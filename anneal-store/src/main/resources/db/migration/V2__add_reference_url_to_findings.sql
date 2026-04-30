@@ -1,4 +1,5 @@
--- V3 — Add reference_url to findings
+-- V2 — Add reference_url to findings
+--
 -- Denormalized from MigrationRule at scan time.
 -- Nullable — existing rows retain NULL, new scans populate the column.
 

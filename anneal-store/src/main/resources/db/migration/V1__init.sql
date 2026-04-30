@@ -1,23 +1,32 @@
+-- V1 — Initial schema
+--
+-- Creates the anneal schema, core tables, indexes, and sequences.
+-- pgvector extension required — available in pgvector/pgvector:pg16.
+
 CREATE EXTENSION IF NOT EXISTS vector;
 
 CREATE SCHEMA IF NOT EXISTS anneal;
 
+-- ── scan_results ─────────────────────────────────────────────────────────────
+
 CREATE TABLE IF NOT EXISTS anneal.scan_results (
-    id              BIGSERIAL PRIMARY KEY,
-    scan_id         TEXT        NOT NULL UNIQUE,
-    repo_path       TEXT        NOT NULL,
-    detected_version TEXT       NOT NULL,
-    target_version  TEXT        NOT NULL DEFAULT 'V25',
-    risk_score      INTEGER     NOT NULL DEFAULT 0,
-    risk_band       TEXT        NOT NULL DEFAULT 'LOW',
-    phase           TEXT        NOT NULL DEFAULT 'ANALYSIS',
-    files_scanned   INTEGER     NOT NULL DEFAULT 0,
-    files_with_findings INTEGER NOT NULL DEFAULT 0,
-    scanned_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    id                  BIGSERIAL   PRIMARY KEY,
+    scan_id             TEXT        NOT NULL UNIQUE,
+    repo_path           TEXT        NOT NULL,
+    detected_version    TEXT        NOT NULL,
+    target_version      TEXT        NOT NULL DEFAULT 'V25',
+    risk_score          INTEGER     NOT NULL DEFAULT 0,
+    risk_band           TEXT        NOT NULL DEFAULT 'LOW',
+    phase               TEXT        NOT NULL DEFAULT 'ANALYSIS',
+    files_scanned       INTEGER     NOT NULL DEFAULT 0,
+    files_with_findings INTEGER     NOT NULL DEFAULT 0,
+    scanned_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- ── findings ─────────────────────────────────────────────────────────────────
+
 CREATE TABLE IF NOT EXISTS anneal.findings (
-    id              BIGSERIAL PRIMARY KEY,
+    id              BIGSERIAL   PRIMARY KEY,
     finding_id      TEXT        NOT NULL UNIQUE,
     scan_id         TEXT        NOT NULL REFERENCES anneal.scan_results(scan_id),
     rule_id         TEXT        NOT NULL,
@@ -38,13 +47,13 @@ CREATE TABLE IF NOT EXISTS anneal.findings (
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE INDEX IF NOT EXISTS findings_scan_id_idx ON anneal.findings (scan_id);
+CREATE INDEX IF NOT EXISTS findings_severity_idx ON anneal.findings (severity);
 
-CREATE INDEX IF NOT EXISTS findings_scan_id_idx
-    ON anneal.findings (scan_id);
+-- ── Sequences ─────────────────────────────────────────────────────────────────
+-- Hibernate default naming: {table}_SEQ (uppercase)
+-- allocationSize default: 50
 
-CREATE INDEX IF NOT EXISTS findings_severity_idx
-    ON anneal.findings (severity);
-
-
-CREATE SEQUENCE IF NOT EXISTS scan_results_seq START WITH 1 INCREMENT BY 50;
-CREATE SEQUENCE IF NOT EXISTS findings_seq START WITH 1 INCREMENT BY 50;
+CREATE SEQUENCE IF NOT EXISTS scan_results_SEQ       START WITH 1 INCREMENT BY 50;
+CREATE SEQUENCE IF NOT EXISTS findings_SEQ           START WITH 1 INCREMENT BY 50;
+CREATE SEQUENCE IF NOT EXISTS finding_embeddings_SEQ START WITH 1 INCREMENT BY 50;

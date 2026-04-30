@@ -41,17 +41,19 @@ anneal/
 - Scan returns in ~2s — findings appear immediately, LLM explanations fill in progressively.
 - SSE streaming (GET /api/scan/stream) shows live file-by-file progress during large scans.
 - llmExplanation, llmProvider, llmModel persisted to DB — history view shows explanations.
-- Finding status (ACCEPTED/REJECTED/DEFERRED) persisted via PATCH endpoint.
+- Finding status (ACCEPTED/REJECTED/DEFERRED/SUPPRESSED) persisted via PATCH endpoint.
+- @SuppressAnneal annotation — suppress specific ruleIds at method or type level in source.
+  Suppressed findings appear as SUPPRESSED status, excluded from risk score but auditable.
+- Flyway migrations consolidated to V1-V4, sequences named to match Hibernate convention.
 
 ## Roadmap
 
 Next features in priority order:
-1. Rule suppression — @SuppressAnneal annotation respected by scanner
-2. Auto-apply with diff — write autoApplicable fixes to disk with preview and rollback
-3. Similarity search UI — surface pgvector results on FindingCard
-4. Risk trend — sparkline across scans on history tab
-5. CI integration — Gradle plugin, risk score threshold gate
-6. Multi-repo scanning — org-wide aggregate risk scores
+1. Auto-apply with diff — write autoApplicable fixes to disk with preview and rollback
+2. Similarity search UI — surface pgvector results on FindingCard
+3. Risk trend — sparkline across scans on history tab
+4. CI integration — Gradle plugin, risk score threshold gate
+5. Multi-repo scanning — org-wide aggregate risk scores
 
 ## Migration path
 
@@ -100,7 +102,7 @@ HIGH / MANUAL), `introducedIn` (JavaVersion), `removedIn` (JavaVersion, nullable
 | GET    | /api/scan/stream?repoPath=...&sourceVersion=8 | SSE — streams file-by-file scan progress    |
 | GET    | /api/scans                                 | List past scans (summary, no findings)         |
 | GET    | /api/scans/{scanId}                        | Full scan — llmExplanation populated async     |
-| PATCH  | /api/scans/{scanId}/findings/{findingId}   | Update finding status — ACCEPTED/REJECTED/DEFERRED |
+| PATCH  | /api/scans/{scanId}/findings/{findingId}   | Update finding status — ACCEPTED/REJECTED/DEFERRED/SUPPRESSED |
 
 POST /api/scan flow: version detection → rule filtering → AST scan → persist →
 LLM enrichment async (failure-isolated per finding) → ONNX embed → pgvector store → response.

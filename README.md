@@ -18,8 +18,19 @@ It is a **co-pilot, not an autopilot**. It surfaces, explains, and suggests. The
 
 ```
 PATCH /api/scans/{scanId}/findings/{findingId}
-{"status": "ACCEPTED"}
+{"status": "ACCEPTED"}   // or REJECTED, DEFERRED, SUPPRESSED
 ```
+
+Findings can also be suppressed at the source level using `@SuppressAnneal`:
+
+```java
+@SuppressAnneal("JPMS_ILLEGAL_REFLECTIVE_ACCESS")
+public void reflect() throws Exception {
+    field.setAccessible(true); // intentional — legacy bridge, tracked in JIRA-1234
+}
+```
+
+Suppressed findings remain visible in the report with `status: SUPPRESSED` and are excluded from the risk score — the decision is auditable, not hidden.
 
 ```
 POST /api/scan
@@ -98,7 +109,7 @@ POST /api/scan
 anneal-core     Pure Java — rule engine, AST scanner, risk calculator. Zero framework deps.
 anneal-llm      LangChain4j — async fix enrichment (codellama:13b), ONNX embeddings (MiniLM 384-dim)
 anneal-store    Quarkus + Panache — PostgreSQL persistence, pgvector similarity search
-anneal-api      Quarkus REST — 5 endpoints, CDI wiring, scan orchestration
+anneal-api      Quarkus REST — 6 endpoints, CDI wiring, scan orchestration
 anneal-ui       Next.js 15 — brutalist dark UI, IBM Plex Mono, molten orange
 ```
 

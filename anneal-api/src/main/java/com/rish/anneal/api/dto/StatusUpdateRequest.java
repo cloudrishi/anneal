@@ -10,7 +10,7 @@ import jakarta.validation.constraints.Pattern;
  * {@code Finding.FindingStatus} — validated at the API boundary so invalid
  * values are rejected with 400 before reaching the repository.
  *
- * @param status the new status — ACCEPTED, REJECTED, or DEFERRED.
+ * @param status the new status — ACCEPTED, REJECTED, DEFERRED or SUPPRESSED.
  *               OPEN is intentionally excluded — findings start OPEN and
  *               the UI has no "reopen" action in Phase 3.
  */
@@ -18,8 +18,9 @@ public record StatusUpdateRequest(
 
         @NotBlank(message = "status is required")
         @Pattern(
-                regexp = "ACCEPTED|REJECTED|DEFERRED",
-                message = "status must be one of: ACCEPTED, REJECTED, DEFERRED"
+                regexp = "ACCEPTED|REJECTED|DEFERRED|SUPPRESSED",
+                message = "status must be one of: ACCEPTED, REJECTED, DEFERRED, SUPPRESSED"
         )
         String status
-) {}
+) {
+}

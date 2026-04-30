@@ -1,7 +1,7 @@
 # anneal — Architecture & Design Record
 
 > Living document. Updated at every design decision.  
-> Last updated: April 28, 2026
+> Last updated: April 30, 2026
 
 ---
 
@@ -915,8 +915,8 @@ Two jobs — `test` then `build`.
 | Rule engine                 | ✅ Complete — 22 rules, 6 categories, 8->25 coverage, ANNOTATION pattern active |
 | Risk calculator             | ✅ Complete — weighted formula, per-boundary breakdown                          |
 | Scanner                     | ✅ Complete — AST, build file, version detection                                |
-| REST API                    | ✅ Complete — 5 endpoints, persistence, validation                              |
-| Persistence                 | ✅ Complete — Panache entities, Flyway V1-V5, pgvector tables                   |
+| REST API                    | ✅ Complete — 6 endpoints, persistence, validation                              |
+| Persistence                 | ✅ Complete — Panache entities, Flyway V1-V4 (consolidated), pgvector tables    |
 | Frontend                    | ✅ Complete — brutalist UI, scan panel, risk score, finding cards               |
 | Tests                       | ✅ Complete — 38 tests, all passing locally and in CI                           |
 | CI                          | ✅ Complete — green on GitHub Actions, llms-full.txt generated                  |
@@ -936,18 +936,20 @@ Two jobs — `test` then `build`.
 | JPMS_UNSAFE_USAGE effort    | ✅ Complete — corrected to MANUAL, routes to claude-sonnet-4-6                 |
 | README                      | ✅ Complete                                                                     |
 | Scan progress streaming     | ✅ Complete — SSE endpoint, virtual thread, live progress bar + filename in UI  |
+| Rule suppression            | ✅ Complete — @SuppressAnneal annotation, SUPPRESSED status, excluded from score |
+| Flyway migration cleanup    | ✅ Complete — V1-V4 consolidated, sequences fixed, finding_embeddings_SEQ correct|
 
 ### roadmap
 
 | Feature                | Priority | Description                                                                      |
 |------------------------|----------|----------------------------------------------------------------------------------|
 | Scan progress streaming | ~~1~~    | ✅ Done — SSE endpoint, virtual thread, live progress bar                        |
-| Rule suppression        | 1        | `@SuppressAnneal` annotation in source — scanner respects per-finding overrides  |
-| Auto-apply with diff    | 2        | Write `autoApplicable: true` fixes to disk with diff preview and rollback        |
-| Similarity search UI    | 3        | Surface pgvector similarity on FindingCard — "similar findings from past scans"  |
-| Risk trend              | 4        | Sparkline across scans on history tab — track migration progress over time       |
-| CI integration          | 5        | Gradle plugin — fail build if risk score exceeds configurable threshold          |
-| Multi-repo scanning     | 6        | Scan entire org in one pass, aggregate risk scores across services               |
+| Rule suppression        | ~~2~~    | ✅ Done — @SuppressAnneal, SUPPRESSED status, excluded from risk score            |
+| Auto-apply with diff    | 1        | Write `autoApplicable: true` fixes to disk with diff preview and rollback        |
+| Similarity search UI    | 2        | Surface pgvector similarity on FindingCard — "similar findings from past scans"  |
+| Risk trend              | 3        | Sparkline across scans on history tab — track migration progress over time       |
+| CI integration          | 4        | Gradle plugin — fail build if risk score exceeds configurable threshold          |
+| Multi-repo scanning     | 5        | Scan entire org in one pass, aggregate risk scores across services               |
 
 ---
 
@@ -1015,6 +1017,10 @@ Two jobs — `test` then `build`.
 | 2026-04-28 | Virtual thread for scan execution                    | Blocking scanner doesn't tie up event loop thread           |
 | 2026-04-28 | ScanPanel uses EventSource, fetches full result after DONE | DONE event carries scanId — full findings via GET /api/scans/{scanId} |
 | 2026-04-28 | Progress callback Consumer on CodebaseScanner        | No-op overload — zero breaking changes to existing callers  |
+| 2026-04-30 | @SuppressAnneal — SUPPRESSED not silent drop         | Auditable decision — finding visible but excluded from score |
+| 2026-04-30 | Suppression checks method then type scope            | Matches @SuppressWarnings mental model — most precise first |
+| 2026-04-30 | Flyway V1-V4 consolidated, sequences renamed         | finding_embeddings_SEQ matches Hibernate default naming     |
+| 2026-04-30 | Sequences in V1 not V2                               | All initial schema in one migration — V2 was redundant patch|
 
 ---
 
