@@ -43,11 +43,11 @@ public class JpmsRules {
                                 .build()
                 ))
                 .fixTemplate(FixSuggestion.builder()
-                        .fixType(FixType.MANUAL)
+                        .fixType(FixType.IMPORT_REPLACE)
                         .originalCode("import sun.*;")
                         .suggestedCode("// Replace with the public API equivalent.\n" +
                                 "// Use --add-exports as a temporary workaround only.")
-                        .autoApplicable(false)
+                        .autoApplicable(true)
                         .build())
                 .referenceUrl("https://openjdk.org/jeps/261")
                 .build();

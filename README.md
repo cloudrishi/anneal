@@ -257,8 +257,7 @@ NEXT_PUBLIC_POLL_INTERVAL_MS=3000        # how often to poll for enrichment upda
 ./gradlew :anneal-api:test        # integration tests (requires Docker)
 ```
 
-38 tests — unit + integration, all passing. Integration tests use a real pgvector postgres instance via Quarkus dev
-services.
+58 tests — unit + integration, all passing. Integration tests use a real pgvector postgres instance via Quarkus dev services. Includes 16 eval layer tests validating ground truth fixtures and fix compilation.
 
 To validate `claude-sonnet-4-6` explanation quality against the test-legacy fixture:
 

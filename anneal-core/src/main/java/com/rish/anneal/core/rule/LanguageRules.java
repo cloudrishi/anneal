@@ -47,7 +47,7 @@ public class LanguageRules {
                                 };
                                 """)
                         .suggestedCode("Runnable r = () -> doSomething();")
-                        .autoApplicable(false)
+                        .autoApplicable(true)
                         .build())
                 .referenceUrl("https://docs.oracle.com/javase/tutorial/java/javaOO/lambdaexpressions.html")
                 .build();
@@ -81,16 +81,8 @@ public class LanguageRules {
                 .fixTemplate(FixSuggestion.builder()
                         .fixType(FixType.API_REPLACE)
                         .originalCode("new Date(), Calendar.getInstance(), new SimpleDateFormat()")
-                        .suggestedCode("""
-                                // Replace with java.time equivalents:
-                                // new Date()              → LocalDate.now() / Instant.now()
-                                // Calendar.getInstance()  → ZonedDateTime.now()
-                                // new SimpleDateFormat()  → DateTimeFormatter
-                                import java.time.LocalDate;
-                                import java.time.ZonedDateTime;
-                                import java.time.format.DateTimeFormatter;
-                                """)
-                        .autoApplicable(false)
+                        .suggestedCode("import java.time.Instant;\nimport java.time.ZonedDateTime;\n// new Date() → Instant.now()\n// Calendar.getInstance() → ZonedDateTime.now()")
+                        .autoApplicable(true)
                         .build())
                 .referenceUrl("https://docs.oracle.com/javase/8/docs/api/java/time/package-summary.html")
                 .build();
@@ -125,7 +117,7 @@ public class LanguageRules {
                                     s.toLowerCase();
                                 }
                                 """)
-                        .autoApplicable(false)
+                        .autoApplicable(true)
                         .build())
                 .referenceUrl("https://openjdk.org/jeps/441")
                 .build();

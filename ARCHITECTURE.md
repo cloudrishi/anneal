@@ -1,7 +1,7 @@
 # anneal — Architecture & Design Record
 
 > Living document. Updated at every design decision.  
-> Last updated: April 30, 2026
+> Last updated: May 1, 2026
 
 ---
 
@@ -918,7 +918,7 @@ Two jobs — `test` then `build`.
 | REST API                    | ✅ Complete — 6 endpoints, persistence, validation                              |
 | Persistence                 | ✅ Complete — Panache entities, Flyway V1-V4 (consolidated), pgvector tables    |
 | Frontend                    | ✅ Complete — brutalist UI, scan panel, risk score, finding cards               |
-| Tests                       | ✅ Complete — 38 tests, all passing locally and in CI                           |
+| Tests                       | ✅ Complete — 58 tests, all passing locally and in CI                           |
 | CI                          | ✅ Complete — green on GitHub Actions, llms-full.txt generated                  |
 | LLM layer                   | ✅ Complete — fix enrichment, ONNX embeddings, Ollama local, Anthropic opt-in   |
 | `referenceUrl` on Finding   | ✅ Complete — denormalized at detection, V3 migration, flows to API             |
@@ -938,6 +938,7 @@ Two jobs — `test` then `build`.
 | Scan progress streaming     | ✅ Complete — SSE endpoint, virtual thread, live progress bar + filename in UI  |
 | Rule suppression            | ✅ Complete — @SuppressAnneal annotation, SUPPRESSED status, excluded from score |
 | Flyway migration cleanup    | ✅ Complete — V1-V4 consolidated, sequences fixed, finding_embeddings_SEQ correct|
+| Eval layer                  | ✅ Complete — FixEvaluator, ground truth fixtures, 6 autoApplicable rules        |
 
 ### roadmap
 
@@ -945,6 +946,7 @@ Two jobs — `test` then `build`.
 |------------------------|----------|----------------------------------------------------------------------------------|
 | Scan progress streaming | ~~1~~    | ✅ Done — SSE endpoint, virtual thread, live progress bar                        |
 | Rule suppression        | ~~2~~    | ✅ Done — @SuppressAnneal, SUPPRESSED status, excluded from risk score            |
+| Eval layer              | ~~3~~    | ✅ Done — FixEvaluator, ground truth fixtures, 6 autoApplicable rules             |
 | Auto-apply with diff    | 1        | Write `autoApplicable: true` fixes to disk with diff preview and rollback        |
 | Similarity search UI    | 2        | Surface pgvector similarity on FindingCard — "similar findings from past scans"  |
 | Risk trend              | 3        | Sparkline across scans on history tab — track migration progress over time       |
@@ -1021,6 +1023,12 @@ Two jobs — `test` then `build`.
 | 2026-04-30 | Suppression checks method then type scope            | Matches @SuppressWarnings mental model — most precise first |
 | 2026-04-30 | Flyway V1-V4 consolidated, sequences renamed         | finding_embeddings_SEQ matches Hibernate default naming     |
 | 2026-04-30 | Sequences in V1 not V2                               | All initial schema in one migration — V2 was redundant patch|
+| 2026-05-01 | Eval layer in anneal-core not separate module        | Tight coupling to Finding/MigrationRule — fewer moving parts|
+| 2026-05-01 | Two-stage eval: syntax then compilation              | Fast syntax check first; compilation only if syntax passes  |
+| 2026-05-01 | javax.tools.JavaCompiler for compilation check       | JDK built-in — no extra dependency, in-memory file object   |
+| 2026-05-01 | Ground truth fixtures as Before/After Java pairs     | Controlled input — deterministic, not copied from real files |
+| 2026-05-01 | 6 rules marked autoApplicable: true                  | Only deterministic fixes — import replace and pattern swap  |
+| 2026-05-01 | Build file changes out of scope for v1 auto-apply    | Source rewriting is high value; build file adds complexity  |
 
 ---
 

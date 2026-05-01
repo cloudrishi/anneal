@@ -44,7 +44,10 @@ anneal/
 - Finding status (ACCEPTED/REJECTED/DEFERRED/SUPPRESSED) persisted via PATCH endpoint.
 - @SuppressAnneal annotation — suppress specific ruleIds at method or type level in source.
   Suppressed findings appear as SUPPRESSED status, excluded from risk score but auditable.
-- Flyway migrations consolidated to V1-V4, sequences named to match Hibernate convention.
+- Eval layer in anneal-core/eval — FixEvaluator validates autoApplicable fixes via two-stage
+  syntax (JavaParser) + compilation (javax.tools.JavaCompiler) check before auto-apply.
+- 6 ground truth fixture pairs (Before/After Java files) for each autoApplicable rule.
+- 6 rules marked autoApplicable: true — deterministic import replacements and pattern swaps.
 
 ## Roadmap
 
@@ -153,10 +156,11 @@ Key implementation notes:
 
 ## Testing
 
-38 tests, all passing in CI (GitHub Actions):
+58 tests, all passing in CI (GitHub Actions):
 - `RiskScoreCalculatorTest` — 14 unit tests, includes score-66 regression anchor
 - `RuleEngineTest` — 9 unit tests (AST, IMPORT, API_CALL, ANNOTATION, REFLECTION)
 - `VersionDetectorTest` — 9 unit tests (Maven, Gradle, edge cases)
+- `FixEvaluatorTest` — 16 unit tests (6 fixture syntax, 6 fixture compilation, 4 evaluator)
 - `ScanResourceTest` — 6 integration tests against real pgvector/pgvector:pg16
 
 CI: test job (pgvector service + Java 25 Temurin) → build job.
