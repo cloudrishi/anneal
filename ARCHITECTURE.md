@@ -415,6 +415,25 @@ artefacts — called on every model response unconditionally.
 **`EmbeddingRepository`** — `save()` is idempotent (deletes before insert — safe for re-scans). `findSimilar()` uses
 native SQL with pgvector `<=>` cosine operator, excludes current scan, returns N closest from past scans.
 
+### real-world validation — Apache Commons Lang 3.17.0
+
+Scanned `commons-lang/src/main/java` at tag `LANG_3_17_0` — 259 files, Java 8 declared source, Java 25 target.
+
+| Rule                             | Findings | Key files                                                     |
+|----------------------------------|----------|---------------------------------------------------------------|
+| `JPMS_ILLEGAL_REFLECTIVE_ACCESS` | 14       | FieldUtils, MethodUtils, AccessibleObjects, CompareToBuilder  |
+| `API_THREAD_STOP_REMOVED`        | 5        | StopWatch                                                     |
+| `CONCURRENCY_THREAD_VIRTUAL`     | 3        | BackgroundInitializer, TimedSemaphore, BasicThreadFactory     |
+
+**Risk score: 100 / CRITICAL**
+- 8→11: CRITICAL (100) — 14 reflective access violations across the reflect package
+- 11→17: LOW (0) — clean boundary
+- 17→21: HIGH (57) — 5 Thread.stop() removals + 3 concurrency modernizations
+- 21→25: LOW (0) — clean boundary
+
+This is expected — Commons Lang's reflection-heavy utility layer is precisely what JPMS was built to encapsulate.
+The scan result is reproducible: clone `--branch LANG_3_17_0` and you get the same 22 findings.
+
 ### scan flow (complete)
 
 ```

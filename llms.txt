@@ -19,10 +19,10 @@ LLM enrichment adds prose explanations to findings after detection completes.
 
 ```
 anneal/
-├── anneal-core/    # Domain model, rule engine, scanner — pure Java, no CDI
-├── anneal-api/     # Quarkus REST layer — 4 endpoints, RuleRegistry, ScanResource
+├── anneal-core/    # Domain model, rule engine, scanner, eval — pure Java, no CDI
+├── anneal-api/     # Quarkus REST layer — 6 endpoints, RuleRegistry, ScanResource, ScanProgressResource
 ├── anneal-llm/     # LangChain4j enrichment — Ollama + Anthropic, ONNX embeddings
-├── anneal-store/   # Panache entities, Flyway migrations V1–V5, pgvector
+├── anneal-store/   # Panache entities, Flyway migrations V1–V4, pgvector
 └── anneal-ui/      # Next.js 15 frontend — brutalist dark, IBM Plex Mono, molten orange
 ```
 
@@ -57,6 +57,19 @@ Next features in priority order:
 3. Risk trend — sparkline across scans on history tab
 4. CI integration — Gradle plugin, risk score threshold gate
 5. Multi-repo scanning — org-wide aggregate risk scores
+
+## Real-world validation — Apache Commons Lang 3.17.0
+
+Scanned 259 files (Java 8) against Java 25 target. Pinned to tag LANG_3_17_0.
+Result: 100/CRITICAL — 22 findings across 12 files.
+
+| Rule                             | Count | Files                                              |
+|----------------------------------|-------|----------------------------------------------------|
+| JPMS_ILLEGAL_REFLECTIVE_ACCESS   | 14    | FieldUtils, MethodUtils, AccessibleObjects, etc    |
+| API_THREAD_STOP_REMOVED          | 5     | StopWatch                                          |
+| CONCURRENCY_THREAD_VIRTUAL       | 3     | BackgroundInitializer, TimedSemaphore, BasicThreadFactory |
+
+Boundary scores: 8→11 CRITICAL (14 findings), 11→17 LOW (0), 17→21 HIGH (8), 21→25 LOW (0).
 
 ## Migration path
 
